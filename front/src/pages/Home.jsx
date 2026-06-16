@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, Check, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
-import { appTypes, getPlansByApp } from '../data/Constants';
+import { appTypes, getPlansByApp, getAppByKey } from '../data/Constants';
 
 const Home = ({ handleOrder }) => {
     const [activeTab, setActiveTab] = useState('wordpress');
@@ -9,14 +9,14 @@ const Home = ({ handleOrder }) => {
     return (
         <>
             <header className="py-24 text-center px-4 relative">
-                <div className="inline-flex items-center gap-2 bg-zinc-900 border border-zinc-700 text-cyan-400 px-4 py-2 rounded-full text-[10px] font-black mb-8 uppercase tracking-widest">
+                <div className="hb-rise inline-flex items-center gap-2 bg-zinc-900 border border-zinc-700 text-cyan-400 px-4 py-2 rounded-full text-[10px] font-black mb-8 uppercase tracking-widest">
                     <Zap className="w-3 h-3 fill-current" /> Infrastructure Cloud Haute Performance
                 </div>
-                <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-[0.9] uppercase">
+                <h1 className="hb-rise font-display text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-[0.9] uppercase" style={{ animationDelay: '80ms' }}>
                     La performance sans compromis <br />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">pour vos serveurs.</span>
                 </h1>
-                <p className="max-w-2xl mx-auto text-lg text-zinc-400 leading-relaxed font-medium">
+                <p className="hb-rise max-w-2xl mx-auto text-lg text-zinc-400 leading-relaxed font-medium" style={{ animationDelay: '160ms' }}>
                     Hébergement haute disponibilité, monitoring en temps réel et déploiement instantané.
                     HostBuster simplifie la gestion de votre infrastructure technique.
                 </p>
@@ -40,14 +40,18 @@ const Home = ({ handleOrder }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {currentPlans.map((plan, index) => (
-                        <div key={index} className={`relative bg-zinc-900 rounded-sm p-8 border-2 transition-all ${plan.recommended ? 'border-orange-500' : 'border-zinc-800'}`}>
+                        <div
+                            key={index}
+                            style={{ animationDelay: `${index * 90}ms` }}
+                            className="hb-rise group relative bg-zinc-900 rounded-sm p-8 border-2 border-zinc-800 transition-all duration-300 hover:-translate-y-1.5 hover:border-cyan-500/50 hover:shadow-[0_18px_50px_-20px_rgba(34,211,238,0.4)]"
+                        >
                             <div className="mb-8">
-                                <h3 className="text-2xl font-black mb-1 uppercase text-white">{plan.name}</h3>
+                                <h3 className="font-display text-3xl font-black mb-1 uppercase text-white">{plan.name}</h3>
                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Configuration recommandée</p>
                             </div>
                             <div className="mb-8 flex items-baseline gap-1">
-                                <span className="text-4xl font-black">{plan.price} €</span>
-                                <span className="text-zinc-500 font-bold text-xs">/MOIS</span>
+                                <span className="font-display text-5xl font-black">{plan.price}</span>
+                                <span className="text-zinc-500 font-bold text-xs uppercase tracking-widest">crédits /mois</span>
                             </div>
                             <div className="space-y-4 mb-10">
                                 {plan.features.map((feature, fIndex) => (
@@ -57,8 +61,8 @@ const Home = ({ handleOrder }) => {
                                 ))}
                             </div>
                             <button
-                                onClick={() => handleOrder(plan)}
-                                className={`w-full py-4 rounded-sm font-black text-xs uppercase tracking-widest transition-all ${plan.recommended ? 'bg-orange-600 text-white' : 'bg-zinc-800 text-white'}`}
+                                onClick={() => handleOrder(plan, getAppByKey(activeTab))}
+                                className="w-full py-4 rounded-sm font-black text-xs uppercase tracking-widest transition-all bg-zinc-800 text-white hover:bg-cyan-500 hover:text-black"
                             >
                                 Sélectionner l'offre
                             </button>
@@ -71,7 +75,7 @@ const Home = ({ handleOrder }) => {
                 <div className="bg-zinc-900 border border-zinc-800 rounded-sm p-12">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
-                            <h2 className="text-4xl font-black mb-8 leading-tight uppercase tracking-tighter text-white">Sécurité et isolation des données.</h2>
+                            <h2 className="font-display text-5xl font-black mb-8 leading-tight uppercase tracking-tighter text-white">Sécurité et isolation des données.</h2>
                             <div className="space-y-8">
                                 <div className="flex gap-5">
                                     <ShieldCheck className="w-6 h-6 text-cyan-400 shrink-0" />
@@ -90,7 +94,7 @@ const Home = ({ handleOrder }) => {
                             </div>
                         </div>
                         <div className="bg-zinc-950 border border-zinc-800 p-10 rounded-sm text-center">
-                            <h3 className="text-6xl font-black mb-2 text-cyan-400">99.9%</h3>
+                            <h3 className="font-display text-7xl font-black mb-2 text-cyan-400">99.9%</h3>
                             <p className="font-black uppercase tracking-widest text-[10px] text-zinc-500">Disponibilité garantie (SLA)</p>
                         </div>
                     </div>

@@ -22,14 +22,8 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [strength, setStrength] = useState({ score: 0, label: '', color: '', text: '' });
-  const [isScanning, setIsScanning] = useState(true);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsScanning(false), 1500);
-    return () => clearTimeout(timer);
-  }, [isSignUp]);
 
   // Reset des erreurs quand on bascule connexion/inscription
   useEffect(() => {
@@ -63,17 +57,18 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
     setError('');
     setSubmitting(true);
     try {
+      let u;
       if (isSignUp) {
-        await register({
+        u = await register({
           name: `${prenom} ${nom}`.trim(),
           email,
           password,
           password_confirmation: passwordConfirm,
         });
       } else {
-        await login(email, password);
+        u = await login(email, password);
       }
-      onAuthSuccess();
+      onAuthSuccess(u);
     } catch (err) {
       // Erreurs de validation Laravel : on prend le premier message
       if (err.errors) {
@@ -94,23 +89,11 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
         onClick={() => setShowLogin(false)}
       ></div>
 
-      <div className="relative bg-zinc-900 border-2 border-zinc-800 w-full max-w-lg rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+      <div className="grain relative bg-zinc-900 border-2 border-zinc-800 w-full max-w-lg rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
         <div className="h-1.5 bg-[repeating-linear-gradient(45deg,#facc15,#facc15_10px,#000_10px,#000_20px)] w-full"></div>
 
-        {isScanning && (
-          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-            <div className="w-full h-px bg-cyan-500 shadow-[0_0_15px_#22d3ee] absolute top-0 animate-[scan_1.5s_ease-in-out_infinite]"></div>
-            <style>{`
-              @keyframes scan {
-                0% { top: 0%; opacity: 0; }
-                50% { opacity: 1; }
-                100% { top: 100%; opacity: 0; }
-              }
-            `}</style>
-          </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="p-8 md:p-12">
+        <form onSubmit={handleSubmit} className="relative z-10 p-8 md:p-12">
           <div className="text-center mb-8">
             <div className="relative inline-block mb-4">
               <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
@@ -137,33 +120,33 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
             {isSignUp && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Nom</label>
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Nom</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                    <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Dupont" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-500/50 focus:outline-none transition-all font-bold text-sm text-white" />
+                    <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Dupont" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Prénom</label>
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Prénom</label>
                   <div className="relative group">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                    <input type="text" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Ex: Jean" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-500/50 focus:outline-none transition-all font-bold text-sm text-white" />
+                    <input type="text" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Ex: Jean" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
                   </div>
                 </div>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Email</label>
+              <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Email</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="adresse@email.com" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-500/50 focus:outline-none transition-all font-bold text-sm text-white" />
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="adresse@email.com" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
               </div>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-end px-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Mot de passe</label>
+                <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500">Mot de passe</label>
                 {!isSignUp && (
                   <button type="button" className="text-[10px] font-bold text-zinc-600 hover:text-cyan-400 transition-colors">
                     Mot de passe oublié ?
@@ -177,7 +160,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
                   value={password}
                   onChange={(e) => checkStrength(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-12 focus:border-cyan-500/50 focus:outline-none transition-all font-bold text-sm text-white"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-12 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white"
                 />
                 <button
                   type="button"
@@ -210,7 +193,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
 
             {isSignUp && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Confirmer le mot de passe</label>
+                <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirmer le mot de passe</label>
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
                   <input
@@ -218,7 +201,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-500/50 focus:outline-none transition-all font-bold text-sm text-white"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white"
                   />
                 </div>
               </div>
@@ -227,7 +210,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="group relative w-full bg-white text-black font-black py-4 rounded-sm hover:bg-cyan-400 transition-all mt-4 uppercase tracking-[0.2em] text-[11px] overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="group relative w-full bg-white text-black font-black py-4 rounded-sm hover:bg-cyan-400 active:scale-[0.99] transition-all mt-4 uppercase tracking-[0.2em] text-[11px] overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <span className="relative z-10 flex items-center gap-2">
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}

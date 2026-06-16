@@ -1,1 +1,43 @@
 @import "tailwindcss";
+
+/* Typographie distinctive (remplace les polices système génériques).
+   Outfit : grotesque géométrique, conserve les graisses lourdes (font-black).
+   JetBrains Mono : pour les éléments mono (console, etc.). */
+@theme {
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Outfit", system-ui, sans-serif;
+}
+
+/* Fond global (évite le blanc lors du rebond de scroll) */
+@layer base {
+  html, body {
+    background-color: #09090b; /* zinc-950 */
+    color-scheme: dark;
+  }
+}
+
+/* ---- Motion : révélation échelonnée au chargement ---- */
+@keyframes hb-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hb-rise {
+  opacity: 0;
+  animation: hb-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hb-rise { animation: none; opacity: 1; }
+}
+
+/* ---- Grain subtil (ambiance) ---- */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+}

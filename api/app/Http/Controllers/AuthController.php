@@ -56,6 +56,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->suspended_at !== null) {
+            throw ValidationException::withMessages([
+                'email' => ['Compte suspendu. Contactez un administrateur.'],
+            ]);
+        }
+
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([

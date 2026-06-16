@@ -9,8 +9,23 @@ CREATE TABLE users (
     credits DECIMAL(10, 2) DEFAULT 1000.00,
     role ENUM('admin', 'client') DEFAULT 'client',
     remember_token VARCHAR(100) NULL,
+    suspended_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL
+);
+
+-- Historique des ajustements de crédits par les admins
+CREATE TABLE credit_adjustments (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    reason VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_credit_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_credit_admin FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX credit_user_index (user_id)
 );
 
 -- Tokens d'API Sanctum (authentification)

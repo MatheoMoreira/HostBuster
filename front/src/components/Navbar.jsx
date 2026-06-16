@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Ghost, LayoutDashboard, LogOut, Coins } from 'lucide-react';
+import { Ghost, LayoutDashboard, LogOut, Coins, ShieldCheck, Plus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = ({ setShowLogin, setIsSignUp }) => {
@@ -28,12 +28,23 @@ const Navbar = ({ setShowLogin, setIsSignUp }) => {
           <div className="flex items-center gap-6">
             {isLoggedIn && (
               <>
-                <span className="hidden sm:flex items-center gap-2 text-sm font-bold text-yellow-400">
-                  <Coins className="w-4 h-4" /> {user?.credits ?? 0} crédits
-                </span>
+                <Link
+                  to="/credits"
+                  className="hidden sm:flex items-center gap-2 text-sm font-bold text-yellow-400 hover:text-yellow-300 transition-colors group"
+                  title="Recharger des crédits"
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>{Math.trunc(Number(user?.credits ?? 0))} crédits</span>
+                  <Plus className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 group-hover:rotate-90 transition-all" />
+                </Link>
                 <Link to="/dashboard" className="text-sm font-bold text-zinc-400 hover:text-cyan-400 transition-colors flex items-center gap-2">
                   <LayoutDashboard className="w-4 h-4" /> Dashboard
                 </Link>
+                {user?.role === 'admin' && (
+                  <Link to="/admin/users" className="text-sm font-bold text-orange-400 hover:text-orange-300 transition-colors flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4" /> Admin
+                  </Link>
+                )}
               </>
             )}
             {!isLoggedIn ? (
