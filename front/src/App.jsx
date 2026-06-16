@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LoginModal from './components/LoginModal';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Payment from './pages/Payment';
 import Setup from './pages/Setup';
 import InstanceDetails from './pages/InstanceDetails';
+import { useAuth } from './context/AuthContext';
 
 const App = () => {
   const [showLogin, setShowLogin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
-  
+
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
   const handleOrder = (plan) => {
@@ -25,12 +27,12 @@ const App = () => {
     }
   };
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  // Appelé par LoginModal après une connexion/inscription réussie.
+  const handleAuthSuccess = () => {
     setShowLogin(false);
-    // Si l'utilisateur était en train de commander, on le redirige vers le paiement
     if (selectedPlan) {
       navigate('/payment', { state: { plan: selectedPlan } });
+      setSelectedPlan(null);
     } else {
       navigate('/dashboard');
     }
@@ -39,27 +41,25 @@ const App = () => {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-cyan-400 selection:text-black">
 
-      <Navbar 
-        isLoggedIn={isLoggedIn} 
-        setShowLogin={setShowLogin} 
-        setIsLoggedIn={setIsLoggedIn}
+      <Navbar
+        setShowLogin={setShowLogin}
         setIsSignUp={setIsSignUp}
       />
 
       <Routes>
         <Route path="/" element={<Home handleOrder={handleOrder} />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/setup" element={<Setup />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/instance/:id" element={<InstanceDetails />} />
+        <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
+        <Route path="/setup" element={<ProtectedRoute><Setup /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/instance/:id" element={<ProtectedRoute><InstanceDetails /></ProtectedRoute>} />
       </Routes>
 
       {showLogin && (
-        <LoginModal 
-          isSignUp={isSignUp} 
-          setIsSignUp={setIsSignUp} 
-          setShowLogin={setShowLogin} 
-          handleLogin={handleLogin} 
+        <LoginModal
+          isSignUp={isSignUp}
+          setIsSignUp={setIsSignUp}
+          setShowLogin={setShowLogin}
+          onAuthSuccess={handleAuthSuccess}
         />
       )}
     </div>

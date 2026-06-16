@@ -8,7 +8,25 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL,
     credits DECIMAL(10, 2) DEFAULT 1000.00,
     role ENUM('admin', 'client') DEFAULT 'client',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    remember_token VARCHAR(100) NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL
+);
+
+-- Tokens d'API Sanctum (authentification)
+CREATE TABLE personal_access_tokens (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    tokenable_type VARCHAR(255) NOT NULL,
+    tokenable_id BIGINT UNSIGNED NOT NULL,
+    name TEXT NOT NULL,
+    token VARCHAR(64) NOT NULL UNIQUE,
+    abilities TEXT NULL,
+    last_used_at TIMESTAMP NULL,
+    expires_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL DEFAULT NULL,
+    updated_at TIMESTAMP NULL DEFAULT NULL,
+    INDEX pat_tokenable_index (tokenable_type, tokenable_id),
+    INDEX pat_expires_at_index (expires_at)
 );
 
 CREATE TABLE applications (
