@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import Navbar from './components/navbar';
+import Navbar from './components/Navbar';
 import LoginModal from './components/LoginModal';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
@@ -38,7 +38,6 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-cyan-400 selection:text-black">
-      <div className="h-1.5 bg-[repeating-linear-gradient(45deg,#facc15,#facc15_10px,#000_10px,#000_20px)] w-full"></div>
 
       <Navbar 
         isLoggedIn={isLoggedIn} 

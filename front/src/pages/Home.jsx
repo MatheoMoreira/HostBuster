@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Zap, Check, ArrowRight, ShieldCheck, Globe } from 'lucide-react';
-import { appTypes, getPlansByApp } from '../data/constants';
+import { appTypes, getPlansByApp } from '../data/Constants';
 
 const Home = ({ handleOrder }) => {
     const [activeTab, setActiveTab] = useState('wordpress');
