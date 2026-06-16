@@ -35,14 +35,14 @@ applications via une interface simple, sécurisée et responsive.
 
 | Dossier  | Rôle             | Stack                                                        |
 |----------|------------------|-------------------------------------------------------------|
-| `api/`   | Backend / API    | Laravel 13 · PHP 8.3 · Sanctum · MySQL                      |
+| `api/`   | Backend / API    | Laravel 13 · PHP 8.4 · Sanctum · MySQL                      |
 | `front/` | Frontend (SPA)   | React 19 · Vite · Tailwind CSS · React Router · Stripe      |
 
 ---
 
 ## 1. Prérequis
 
-- **PHP** ≥ 8.3 (extensions Laravel : `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`)
+- **PHP** 8.4 (minimum 8.3 — extensions Laravel : `pdo_mysql`, `mbstring`, `openssl`, `tokenizer`, `xml`, `ctype`, `json`, `bcmath`)
 - **Composer**
 - **Node.js** ≥ 18 et **npm**
 - **MySQL** ≥ 8 (ou MariaDB)
@@ -116,11 +116,9 @@ cd front
 npm install
 ```
 
-Si tu utilises les paiements Stripe, crée un fichier `front/.env` avec ta clé publique :
-
-```dotenv
-VITE_STRIPE_PUBLIC_KEY=pk_test_xxxxxxxx
-```
+> **Stripe :** la clé publique (publishable) est actuellement codée en dur dans
+> [`front/src/pages/Payment.jsx`](front/src/pages/Payment.jsx) (clé de **test**
+> `pk_test_…`). Pour utiliser un autre compte Stripe, remplace cette valeur.
 
 ---
 
