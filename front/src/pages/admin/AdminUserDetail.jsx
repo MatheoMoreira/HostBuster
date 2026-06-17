@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, ShieldCheck, Ban, Trash2, Loader2, Plus, Minus, Server } from 'lucide-react';
+import { ArrowLeft, Coins, ShieldCheck, Ban, Trash2, Loader2, Plus, Minus, Server, ShoppingCart, Wrench } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 
@@ -66,7 +66,7 @@ const AdminUserDetail = () => {
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-20 text-center"><Loader2 className="w-6 h-6 animate-spin inline text-zinc-500" /></div>;
   if (!data) return <div className="max-w-5xl mx-auto px-4 py-20 text-center text-red-400">{error || 'Introuvable'}</div>;
 
-  const { user, adjustments, instances, total_spent } = data;
+  const { user, credit_history = [], instances, total_spent } = data;
   const isSelf = me?.id === user.id;
 
   return (
@@ -179,21 +179,41 @@ const AdminUserDetail = () => {
         <div className="space-y-6">
           <div className="bg-zinc-900 border-2 border-zinc-800 rounded-sm p-6">
             <h2 className="font-display text-xl font-black uppercase tracking-tight text-white mb-4">Historique crédits</h2>
-            {adjustments.length === 0 && <p className="text-sm text-zinc-500">Aucun ajustement.</p>}
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              {adjustments.map((a) => (
-                <div key={a.id} className="flex items-start justify-between gap-3 py-2 border-b border-zinc-800/60 last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-zinc-400">{a.reason || <span className="italic text-zinc-600">(sans raison)</span>}</p>
-                    <p className="text-[10px] font-mono text-zinc-600 mt-0.5">
-                      {a.admin?.name} · {new Date(a.created_at).toLocaleString('fr-FR')}
-                    </p>
+            {credit_history.length === 0 && <p className="text-sm text-zinc-500">Aucun mouvement.</p>}
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {credit_history.map((e, idx) => {
+                const positive = Number(e.amount) >= 0;
+                let Icon, label, sub;
+                if (e.kind === 'admin_adjustment') {
+                  Icon = Wrench;
+                  label = e.reason || 'Ajustement admin';
+                  sub = `Admin · ${e.admin_name || 'inconnu'}`;
+                } else if (e.kind === 'credit_purchase') {
+                  Icon = ShoppingCart;
+                  label = `Achat de crédits`;
+                  sub = `Paiement · ${Number(e.euros).toFixed(2)} €`;
+                } else {
+                  Icon = Server;
+                  label = `Déploiement instance${e.instance_name ? ` · ${e.instance_name}` : ''}`;
+                  sub = `Achat instance #${e.instance_id}`;
+                }
+                return (
+                  <div key={idx} className="flex items-start justify-between gap-3 py-2 border-b border-zinc-800/60 last:border-0">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${positive ? 'text-green-400' : 'text-red-400'}`} />
+                      <div className="min-w-0">
+                        <p className="text-xs text-zinc-300 truncate">{label}</p>
+                        <p className="text-[10px] font-mono text-zinc-600 mt-0.5">
+                          {sub} · {new Date(e.created_at).toLocaleString('fr-FR')}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`font-mono font-black text-sm shrink-0 ${positive ? 'text-green-400' : 'text-red-400'}`}>
+                      {positive ? '+' : ''}{Math.trunc(Number(e.amount))}
+                    </span>
                   </div>
-                  <span className={`font-mono font-black text-sm shrink-0 ${Number(a.amount) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {Number(a.amount) >= 0 ? '+' : ''}{a.amount}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

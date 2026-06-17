@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CreditAdjustment;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -31,12 +32,6 @@ class AdminUserController extends Controller
     {
         $user = User::withCount('tokens')->findOrFail($id);
 
-        $adjustments = CreditAdjustment::with('admin:id,name')
-            ->where('user_id', $id)
-            ->orderByDesc('created_at')
-            ->limit(50)
-            ->get();
-
         $instances = DB::table('instances')
             ->where('user_id', $id)
             ->orderByDesc('created_at')
@@ -49,10 +44,72 @@ class AdminUserController extends Controller
 
         return response()->json([
             'user' => $user,
-            'adjustments' => $adjustments,
+            'credit_history' => $this->buildCreditHistory($id),
             'instances' => $instances,
             'total_spent' => (float) $totalSpent,
         ]);
+    }
+
+    private function buildCreditHistory(int $userId): array
+    {
+        // MySQL stocke les TIMESTAMP en UTC. Eloquent les rend en Carbon (tz app),
+        // DB::table les rend en string brute UTC → on force tout en UTC ISO ici.
+        $toUtcIso = fn ($value) => $value instanceof Carbon
+            ? $value->copy()->utc()->toIso8601String()
+            : Carbon::parse((string) $value, 'UTC')->toIso8601String();
+
+        $adjustments = CreditAdjustment::with('admin:id,name')
+            ->where('user_id', $userId)
+            ->get()
+            ->map(fn ($a) => [
+                'kind' => 'admin_adjustment',
+                'amount' => (float) $a->amount,
+                'reason' => $a->reason,
+                'admin_name' => $a->admin?->name,
+                'created_at' => $toUtcIso($a->created_at),
+            ]);
+
+        $orders = DB::table('orders')
+            ->leftJoin('instances', 'orders.instance_id', '=', 'instances.id')
+            ->where('orders.user_id', $userId)
+            ->where('orders.status', 'completed')
+            ->select(
+                'orders.id',
+                'orders.instance_id',
+                'orders.amount',
+                'orders.type',
+                'orders.created_at',
+                'instances.instance_name',
+            )
+            ->get()
+            ->map(function ($o) use ($toUtcIso) {
+                $createdAt = $toUtcIso($o->created_at);
+
+                // orders.amount = € pour une recharge (instance_id NULL), crédits pour un achat d'instance
+                if ($o->instance_id === null) {
+                    return [
+                        'kind' => 'credit_purchase',
+                        'amount' => (float) $o->amount * 100,
+                        'euros' => (float) $o->amount,
+                        'created_at' => $createdAt,
+                    ];
+                }
+
+                return [
+                    'kind' => 'instance_purchase',
+                    'amount' => -1 * (float) $o->amount,
+                    'instance_id' => (int) $o->instance_id,
+                    'instance_name' => $o->instance_name,
+                    'created_at' => $createdAt,
+                ];
+            });
+
+        return $adjustments
+            ->concat($orders)
+            ->sortByDesc(fn ($e) => strtotime($e['created_at']))
+            ->values()
+            ->take(100)
+            ->all();
     }
 
     public function update(Request $request, int $id)
