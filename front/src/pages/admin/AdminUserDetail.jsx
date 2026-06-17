@@ -71,7 +71,7 @@ const AdminUserDetail = () => {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-12">
-      <Link to="/admin/users" className="hb-rise inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-cyan-400 mb-6">
+      <Link to="/admin/users" className="hb-rise inline-flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 hover:text-red-400 mb-6">
         <ArrowLeft className="w-3 h-3" /> Retour
       </Link>
 
@@ -92,7 +92,7 @@ const AdminUserDetail = () => {
         </div>
         <div className="hb-rise bg-zinc-900 border-2 border-zinc-800 rounded-sm p-5" style={{ animationDelay: '240ms' }}>
           <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 mb-2">Total dépensé</p>
-          <p className="font-display text-4xl font-black text-cyan-400">{Math.trunc(total_spent)} €</p>
+          <p className="font-display text-4xl font-black text-red-400">{Math.trunc(total_spent)} €</p>
         </div>
         <div className="hb-rise bg-zinc-900 border-2 border-zinc-800 rounded-sm p-5" style={{ animationDelay: '320ms' }}>
           <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500 mb-2">Instances</p>
@@ -114,14 +114,14 @@ const AdminUserDetail = () => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Montant"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded py-2.5 px-3 text-sm font-bold focus:border-cyan-400 focus:outline-none"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded py-2.5 px-3 text-sm font-bold focus:border-red-400 focus:outline-none"
               />
               <input
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Raison (optionnel)"
-                className="w-full bg-zinc-950 border border-zinc-800 rounded py-2.5 px-3 text-sm focus:border-cyan-400 focus:outline-none"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded py-2.5 px-3 text-sm focus:border-red-400 focus:outline-none"
               />
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -219,7 +219,7 @@ const AdminUserDetail = () => {
 
           <div className="bg-zinc-900 border-2 border-zinc-800 rounded-sm p-6">
             <h2 className="font-display text-xl font-black uppercase tracking-tight text-white mb-4 flex items-center gap-2">
-              <Server className="w-5 h-5 text-cyan-400" /> Instances
+              <Server className="w-5 h-5 text-red-400" /> Instances
             </h2>
             {instances.length === 0 && <p className="text-sm text-zinc-500">Aucune instance.</p>}
             <div className="space-y-2">

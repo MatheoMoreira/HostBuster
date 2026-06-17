@@ -60,7 +60,7 @@ const Dashboard = () => {
       <div className="flex justify-between items-end mb-12">
         <div>
           <h2 className="text-3xl font-black uppercase tracking-tighter text-white">
-            Gestion des <span className="text-cyan-400">Instances</span>
+            Gestion des <span className="text-red-400">Instances</span>
           </h2>
           <p className="text-zinc-500 text-sm font-medium mt-1">
             Surveillance de votre infrastructure en temps réel.
@@ -68,7 +68,7 @@ const Dashboard = () => {
         </div>
         <button
           onClick={() => navigate('/setup')}
-          className="bg-cyan-500 hover:bg-cyan-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest transition-colors"
+          className="bg-red-500 hover:bg-red-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest transition-colors"
         >
           Ajouter un serveur
         </button>
@@ -92,7 +92,7 @@ const Dashboard = () => {
           </p>
           <button
             onClick={() => navigate('/setup')}
-            className="bg-cyan-500 hover:bg-cyan-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest"
+            className="bg-red-500 hover:bg-red-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest"
           >
             Déployer ma première instance
           </button>
@@ -108,20 +108,20 @@ const Dashboard = () => {
             <div
               key={inst.id}
               onClick={() => navigate(`/instance/${inst.id}`)}
-              className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm cursor-pointer hover:border-cyan-500/50 transition-all group"
+              className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm cursor-pointer hover:border-red-500/50 transition-all group"
             >
               <div className="flex justify-between items-start mb-6">
-                <Server className="text-cyan-400 w-6 h-6" />
+                <Server className="text-red-400 w-6 h-6" />
                 <span className={`flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded uppercase ${meta.cls}`}>
                   {Icon && <Icon className={`w-3 h-3 ${inst.status === 'deploying' || inst.status === 'provisioning' ? 'animate-spin' : ''}`} />}
                   {meta.label}
                 </span>
               </div>
-              <h4 className="font-black uppercase text-base text-white mb-1 group-hover:text-cyan-400 transition-colors">
+              <h4 className="font-black uppercase text-base text-white mb-1 group-hover:text-red-400 transition-colors">
                 {inst.instance_name}
               </h4>
               {inst.app_name && (
-                <p className="text-cyan-400/80 text-[10px] mb-2 font-black uppercase tracking-widest">
+                <p className="text-red-400/80 text-[10px] mb-2 font-black uppercase tracking-widest">
                   {inst.app_name}
                 </p>
               )}
