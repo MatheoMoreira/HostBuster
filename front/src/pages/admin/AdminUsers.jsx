@@ -52,13 +52,13 @@ const AdminUsers = () => {
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Rechercher nom ou email..."
-            className="w-full bg-zinc-900 border-2 border-zinc-800 rounded-sm py-2.5 pl-10 pr-3 text-sm font-bold focus:border-cyan-400 focus:outline-none transition-colors"
+            className="w-full bg-zinc-900 border-2 border-zinc-800 rounded-sm py-2.5 pl-10 pr-3 text-sm font-bold focus:border-red-400 focus:outline-none transition-colors"
           />
         </div>
         <select
           value={role}
           onChange={(e) => { setRole(e.target.value); setPage(1); }}
-          className="bg-zinc-900 border-2 border-zinc-800 rounded-sm py-2.5 px-3 text-sm font-bold font-mono uppercase tracking-widest focus:border-cyan-400 focus:outline-none"
+          className="bg-zinc-900 border-2 border-zinc-800 rounded-sm py-2.5 px-3 text-sm font-bold font-mono uppercase tracking-widest focus:border-red-400 focus:outline-none"
         >
           <option value="">Tous les rôles</option>
           <option value="admin">Admin</option>
@@ -87,7 +87,7 @@ const AdminUsers = () => {
               <tr><td colSpan={7} className="py-12 text-center text-zinc-500 text-sm font-bold">Aucun utilisateur.</td></tr>
             )}
             {!loading && data?.data?.map((u) => (
-              <tr key={u.id} className="border-b border-zinc-800/60 hover:bg-cyan-500/5 transition-colors">
+              <tr key={u.id} className="border-b border-zinc-800/60 hover:bg-red-500/5 transition-colors">
                 <td className="py-3 px-4 font-bold text-white">{u.name}</td>
                 <td className="py-3 px-4 text-zinc-400 text-sm">{u.email}</td>
                 <td className="py-3 px-4"><RoleBadge role={u.role} /></td>
@@ -103,7 +103,7 @@ const AdminUsers = () => {
                 </td>
                 <td className="py-3 px-4 text-zinc-500 text-xs font-mono">{new Date(u.created_at).toLocaleDateString('fr-FR')}</td>
                 <td className="py-3 px-4 text-right">
-                  <Link to={`/admin/users/${u.id}`} className="text-[10px] font-black uppercase tracking-widest text-cyan-400 hover:text-cyan-300">
+                  <Link to={`/admin/users/${u.id}`} className="text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-300">
                     Détails →
                   </Link>
                 </td>
@@ -120,7 +120,7 @@ const AdminUsers = () => {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 rounded-sm bg-zinc-900 border border-zinc-800 hover:border-cyan-400 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 rounded-sm bg-zinc-900 border border-zinc-800 hover:border-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -128,7 +128,7 @@ const AdminUsers = () => {
             <button
               onClick={() => setPage((p) => Math.min(data.last_page, p + 1))}
               disabled={page === data.last_page}
-              className="p-2 rounded-sm bg-zinc-900 border border-zinc-800 hover:border-cyan-400 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="p-2 rounded-sm bg-zinc-900 border border-zinc-800 hover:border-red-400 disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

@@ -3,6 +3,7 @@ import {
   Lock,
   Mail,
   User,
+  AtSign,
   Eye,
   EyeOff,
   Fingerprint,
@@ -16,9 +17,11 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
   const { login, register } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [username, setUsername] = useState('');
   const [nom, setNom] = useState('');
   const [prenom, setPrenom] = useState('');
   const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState(''); // email OU username pour la connexion
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [strength, setStrength] = useState({ score: 0, label: '', color: '', text: '' });
@@ -44,7 +47,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
       { label: "Très faible", color: "bg-red-500", text: "text-red-500" },
       { label: "Faible", color: "bg-orange-500", text: "text-orange-500" },
       { label: "Moyen", color: "bg-yellow-500", text: "text-yellow-500" },
-      { label: "Fort", color: "bg-cyan-500", text: "text-cyan-400" },
+      { label: "Fort", color: "bg-red-500", text: "text-red-400" },
       { label: "Sécurisé", color: "bg-green-500", text: "text-green-500" }
     ];
 
@@ -60,13 +63,15 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
       let u;
       if (isSignUp) {
         u = await register({
-          name: `${prenom} ${nom}`.trim(),
+          username,
+          first_name: prenom,
+          last_name: nom,
           email,
           password,
           password_confirmation: passwordConfirm,
         });
       } else {
-        u = await login(email, password);
+        u = await login(loginId, password);
       }
       onAuthSuccess(u);
     } catch (err) {
@@ -97,9 +102,9 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
           <div className="text-center mb-8">
             <div className="relative inline-block mb-4">
               <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800">
-                <Fingerprint className="text-cyan-400 w-8 h-8" />
+                <Fingerprint className="text-red-400 w-8 h-8" />
               </div>
-              <div className="absolute inset-0 bg-cyan-500/10 blur-xl rounded-full -z-10"></div>
+              <div className="absolute inset-0 bg-red-500/10 blur-xl rounded-full -z-10"></div>
             </div>
             <h2 className="text-2xl font-black uppercase tracking-tighter text-white">
               {isSignUp ? 'Créer un compte' : 'Connexion Client'}
@@ -118,54 +123,74 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
 
           <div className="space-y-5">
             {isSignUp && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Nom</label>
-                  <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                    <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Dupont" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Prénom</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                      <input type="text" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Ex: Jean" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Nom</label>
+                    <div className="relative group">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                      <input type="text" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex: Dupont" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white" />
+                    </div>
                   </div>
                 </div>
+
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Prénom</label>
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Nom d'utilisateur</label>
                   <div className="relative group">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                    <input type="text" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Ex: Jean" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
+                    <AtSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Ex: jdupont" autoComplete="username" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white" />
                   </div>
+                </div>
+              </>
+            )}
+
+            {isSignUp ? (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Email</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="adresse@email.com" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Email ou nom d'utilisateur</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                  <input type="text" value={loginId} onChange={(e) => setLoginId(e.target.value)} placeholder="adresse@email.com ou jdupont" autoComplete="username" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white" />
                 </div>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="adresse@email.com" className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white" />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
               <div className="flex justify-between items-end px-1">
                 <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500">Mot de passe</label>
                 {!isSignUp && (
-                  <button type="button" className="text-[10px] font-bold text-zinc-600 hover:text-cyan-400 transition-colors">
+                  <button type="button" className="text-[10px] font-bold text-zinc-600 hover:text-red-400 transition-colors">
                     Mot de passe oublié ?
                   </button>
                 )}
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => checkStrength(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-12 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white"
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-12 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-cyan-400 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-red-400 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -195,13 +220,13 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Confirmer le mot de passe</label>
                 <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-cyan-400 transition-colors" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-cyan-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(34,211,238,0.12)] transition-all font-bold text-sm text-white"
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none focus:shadow-[0_0_0_3px_rgba(239,68,68,0.12)] transition-all font-bold text-sm text-white"
                   />
                 </div>
               </div>
@@ -210,17 +235,17 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="group relative w-full bg-white text-black font-black py-4 rounded-sm hover:bg-cyan-400 active:scale-[0.99] transition-all mt-4 uppercase tracking-[0.2em] text-[11px] overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="group relative w-full bg-white text-black font-black py-4 rounded-sm hover:bg-red-400 active:scale-[0.99] transition-all mt-4 uppercase tracking-[0.2em] text-[11px] overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <span className="relative z-10 flex items-center gap-2">
                 {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {isSignUp ? "Créer mon compte" : "Se connecter"}
               </span>
-              <div className="absolute inset-0 bg-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-red-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </button>
 
             <p className="text-center text-[11px] font-medium text-zinc-500 mt-6">
-              {isSignUp ? 'Déjà un compte ?' : "Pas encore de compte ?"} <span onClick={() => setIsSignUp(!isSignUp)} className="text-cyan-400 cursor-pointer hover:underline font-black ml-1 uppercase">
+              {isSignUp ? 'Déjà un compte ?' : "Pas encore de compte ?"} <span onClick={() => setIsSignUp(!isSignUp)} className="text-red-400 cursor-pointer hover:underline font-black ml-1 uppercase">
                 {isSignUp ? 'Se connecter' : "S'inscrire"}
               </span>
             </p>
