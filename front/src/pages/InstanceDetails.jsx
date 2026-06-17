@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play,
   Square,
@@ -206,7 +206,7 @@ const InstanceDetails = () => {
 
             <button
               onClick={() => navigate('/dashboard')}
-              className="bg-white text-black font-black py-3 px-8 rounded-sm hover:bg-cyan-400 active:scale-[0.99] transition-all uppercase tracking-[0.2em] text-xs"
+              className="bg-white text-black font-black py-3 px-8 rounded-sm hover:bg-red-400 active:scale-[0.99] transition-all uppercase tracking-[0.2em] text-xs"
             >
               Retour au dashboard
             </button>
@@ -243,7 +243,7 @@ const InstanceDetails = () => {
               {meta.label}
             </div>
             {instance.app_name && (
-              <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-sm">
+              <span className="text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 px-2 py-1 rounded-sm">
                 {instance.app_name}
               </span>
             )}
@@ -302,7 +302,7 @@ const InstanceDetails = () => {
               </div>
               <div className="flex gap-1 h-8 items-end">
                 {metrics.cpuHistory.map((val, i) => (
-                  <div key={i} className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/40 transition-all rounded-t-sm" style={{ height: `${val}%` }}></div>
+                  <div key={i} className="flex-1 bg-red-500/20 hover:bg-red-500/40 transition-all rounded-t-sm" style={{ height: `${val}%` }}></div>
                 ))}
               </div>
             </>
@@ -323,7 +323,7 @@ const InstanceDetails = () => {
                 <span className="text-zinc-600 text-[10px] font-bold pb-1 uppercase">Sur {ramTotalGb} Go</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-cyan-500 h-full transition-all" style={{ width: `${metrics.ramPct}%` }}></div>
+                <div className="bg-red-500 h-full transition-all" style={{ width: `${metrics.ramPct}%` }}></div>
               </div>
             </>
           )}
@@ -343,7 +343,7 @@ const InstanceDetails = () => {
                 <span className="text-zinc-600 text-[10px] font-bold pb-1 uppercase">Sur {instance.storage_allocated} Go</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-cyan-500 h-full transition-all" style={{ width: `${metrics.diskPct}%` }}></div>
+                <div className="bg-red-500 h-full transition-all" style={{ width: `${metrics.diskPct}%` }}></div>
               </div>
             </>
           )}
@@ -373,7 +373,7 @@ const InstanceDetails = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-6 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === tab.id ? 'bg-zinc-800 text-cyan-400 border-b-2 border-cyan-400' : 'text-zinc-500 hover:text-white'
+                activeTab === tab.id ? 'bg-zinc-800 text-red-400 border-b-2 border-red-400' : 'text-zinc-500 hover:text-white'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -388,7 +388,7 @@ const InstanceDetails = () => {
               <div className="text-zinc-500 mb-1">[SYSTEM] Connexion établie au socket v4.2.1...</div>
               <div className="text-zinc-500 mb-4">[SYSTEM] Authentification via clé SSH réussie.</div>
               <div className="text-white flex gap-2">
-                <span className="text-cyan-400 font-bold">root@{instance.instance_name}:~$</span>
+                <span className="text-red-400 font-bold">root@{instance.instance_name}:~$</span>
                 <span className="animate-pulse">_</span>
               </div>
             </div>
@@ -431,6 +431,8 @@ const InstanceDetails = () => {
 
 const DeployingView = ({ instance, onDone }) => {
   const [progress, setProgress] = useState(0);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
     const start = Date.now();
@@ -440,29 +442,29 @@ const DeployingView = ({ instance, onDone }) => {
       setProgress(pct);
       if (elapsed >= DEPLOY_DURATION_MS) {
         clearInterval(tick);
-        onDone?.();
+        onDoneRef.current?.();
       }
     }, 60);
     return () => clearInterval(tick);
-  }, [onDone]);
+  }, []);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
       <div className="w-full max-w-xl text-center space-y-8">
-        <Server className="w-24 h-24 text-cyan-400 mx-auto animate-pulse" />
+        <Server className="w-24 h-24 text-red-400 mx-auto animate-pulse" />
         <div>
           <h2 className="font-display text-4xl font-black uppercase tracking-tight text-white mb-2">
             Déploiement en cours…
           </h2>
           <p className="text-zinc-400">
             {instance.instance_name}
-            {instance.app_name && <> · <span className="text-cyan-400 font-bold">{instance.app_name}</span></>}
+            {instance.app_name && <> · <span className="text-red-400 font-bold">{instance.app_name}</span></>}
           </p>
         </div>
 
         <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
           <div
-            className="bg-cyan-500 h-full transition-[width] duration-100 ease-linear"
+            className="bg-red-500 h-full transition-[width] duration-100 ease-linear"
             style={{ width: `${progress}%` }}
           />
         </div>
