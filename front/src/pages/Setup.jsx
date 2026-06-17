@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Cpu, MemoryStick, HardDrive } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Cpu, MemoryStick, HardDrive, Coins } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
@@ -53,7 +53,7 @@ const Setup = () => {
         <h1 className="font-display text-4xl md:text-5xl font-black tracking-tighter uppercase text-white">
           Configurez votre instance
         </h1>
-        <p className="text-zinc-400 mt-2">{app.name} · {plan.name} · <span className="text-red-400 font-bold">{plan.price} crédits/mois</span></p>
+        <p className="text-zinc-400 mt-2 flex items-center gap-1.5 flex-wrap">{app.name} · {plan.name} · <span className="text-red-400 font-bold inline-flex items-center gap-1">{plan.price} <Coins className="w-3.5 h-3.5 text-yellow-400" /> crédits/mois</span></p>
       </div>
 
       <div className="hb-rise grid grid-cols-3 gap-2 mb-6" style={{ animationDelay: '80ms' }}>
@@ -98,7 +98,7 @@ const Setup = () => {
         className="hb-rise group w-full bg-white text-black font-black py-5 rounded-sm hover:bg-red-400 active:scale-[0.99] transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-3 disabled:opacity-60"
         style={{ animationDelay: '240ms' }}
       >
-        Lancer le déploiement · {plan.price} crédits <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        Lancer le déploiement · {plan.price} <Coins className="w-4 h-4 text-yellow-600" /> crédits <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
       </button>
     </div>
   );
