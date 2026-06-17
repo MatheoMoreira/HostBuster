@@ -68,7 +68,7 @@ const CheckoutForm = ({ plan, onSuccess }) => {
 
       <button
         disabled={!stripe || processing}
-        className="w-full bg-white text-black font-black py-4 rounded-sm hover:bg-cyan-400 disabled:opacity-50 transition-all uppercase tracking-widest text-xs"
+        className="w-full bg-white text-black font-black py-4 rounded-sm hover:bg-red-400 disabled:opacity-50 transition-all uppercase tracking-widest text-xs"
       >
         {processing ? 'Validation...' : `Régler ${(plan.price / 100).toFixed(2)} € (${plan.price} crédits)`}
       </button>
