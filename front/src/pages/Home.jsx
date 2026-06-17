@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
     Zap, Check, ArrowRight, ShieldCheck, Globe,
     MousePointerClick, CreditCard, Rocket, Server, Cpu, Database, Clock,
-    HelpCircle,
+    HelpCircle, Coins,
 } from 'lucide-react';
 import { appTypes, getPlansByApp, getAppByKey } from '../data/Constants';
 
@@ -35,8 +35,8 @@ const Home = ({ handleOrder }) => {
                     <Zap className="w-3 h-3 fill-current" /> Infrastructure Cloud Haute Performance
                 </div>
                 <h1 className="hb-rise font-display text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-[0.9] uppercase" style={{ animationDelay: '80ms' }}>
-                    La performance sans compromis <br />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-200">pour vos serveurs.</span>
+                    Ne laissez plus la latence <br />
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-200">Hanter vos serveurs.</span>
                 </h1>
                 <p className="hb-rise max-w-2xl mx-auto text-lg text-zinc-400 leading-relaxed font-medium" style={{ animationDelay: '160ms' }}>
                     Hébergement haute disponibilité, monitoring en temps réel et déploiement instantané.
@@ -128,8 +128,9 @@ const Home = ({ handleOrder }) => {
                                     <h3 className="font-display text-3xl font-black mb-1 uppercase text-white">{plan.name}</h3>
                                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Configuration recommandée</p>
                                 </div>
-                                <div className="mb-8 flex items-baseline gap-1">
+                                <div className="mb-8 flex items-baseline gap-1.5">
                                     <span className="font-display text-5xl font-black">{plan.price}</span>
+                                    <Coins className="w-4 h-4 text-yellow-400 self-center" />
                                     <span className="text-zinc-500 font-bold text-xs uppercase tracking-widest">crédits /mois</span>
                                 </div>
                                 <div className="space-y-4 mb-10">
