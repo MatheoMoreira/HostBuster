@@ -6,11 +6,15 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CreditController;
 use App\Http\Controllers\InstanceController;
+use App\Http\Controllers\WorkerCallbackController;
 
 // Routes publiques
 Route::get('/apps', [ApplicationController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+// Webhook Lion (auth par token partagé)
+Route::post('/worker/callback', WorkerCallbackController::class);
 
 // Routes authentifiées (token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -18,7 +22,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/instances', [InstanceController::class, 'index']);
+    Route::get('/instances/{id}', [InstanceController::class, 'show']);
     Route::post('/instances', [InstanceController::class, 'store']);
+    Route::patch('/instances/{id}', [InstanceController::class, 'update']);
+    Route::post('/instances/{id}/start', [InstanceController::class, 'start']);
+    Route::post('/instances/{id}/stop', [InstanceController::class, 'stop']);
+    Route::delete('/instances/{id}', [InstanceController::class, 'destroy']);
 
     Route::post('/credits/recharge', [CreditController::class, 'recharge']);
 
