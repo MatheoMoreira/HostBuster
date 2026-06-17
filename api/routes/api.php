@@ -19,6 +19,7 @@ Route::post('/worker/callback', WorkerCallbackController::class);
 // Routes authentifiées (token Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
+    Route::patch('/user', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::get('/instances', [InstanceController::class, 'index']);
