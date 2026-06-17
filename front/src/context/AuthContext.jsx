@@ -26,22 +26,23 @@ export const AuthProvider = ({ children }) => {
     init();
   }, []);
 
-  const login = async (email, password) => {
+  // `login` peut être un email ou un nom d'utilisateur.
+  const login = async (loginId, password) => {
     const { user: u, token } = await apiFetch('/login', {
       method: 'POST',
       auth: false,
-      body: { email, password },
+      body: { login: loginId, password },
     });
     setToken(token);
     setUser(u);
     return u;
   };
 
-  const register = async ({ name, email, password, password_confirmation }) => {
+  const register = async ({ username, first_name, last_name, email, password, password_confirmation }) => {
     const { user: u, token } = await apiFetch('/register', {
       method: 'POST',
       auth: false,
-      body: { name, email, password, password_confirmation },
+      body: { username, first_name, last_name, email, password, password_confirmation },
     });
     setToken(token);
     setUser(u);

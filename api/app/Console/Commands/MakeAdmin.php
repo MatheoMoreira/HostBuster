@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class MakeAdmin extends Command
 {
@@ -31,7 +32,18 @@ class MakeAdmin extends Command
             return self::FAILURE;
         }
 
+        // username unique dérivé de l'email
+        $base = Str::slug(Str::before($email, '@'), '_') ?: 'admin';
+        $username = $base;
+        $i = 1;
+        while (User::where('username', $username)->exists()) {
+            $username = $base.($i++);
+        }
+
         $user = User::create([
+            'username' => $username,
+            'first_name' => $this->option('name'),
+            'last_name' => '',
             'name' => $this->option('name'),
             'email' => $email,
             'password' => Hash::make($password),
