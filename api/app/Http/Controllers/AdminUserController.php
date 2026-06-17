@@ -40,6 +40,7 @@ class AdminUserController extends Controller
         $totalSpent = DB::table('orders')
             ->where('user_id', $id)
             ->where('status', 'completed')
+            ->whereNull('instance_id')
             ->sum('amount');
 
         return response()->json([
