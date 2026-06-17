@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Ghost, Home, LayoutDashboard, LogOut, Coins, ShieldCheck, Plus, HelpCircle, Menu, X } from 'lucide-react';
+import { Home, LayoutDashboard, LogOut, Coins, ShieldCheck, Plus, HelpCircle, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Avatar from './Avatar';
+import Logo from './Logo';
 
 const Navbar = ({ setShowLogin, setIsSignUp }) => {
   const { isLoggedIn, user, logout } = useAuth();
@@ -54,8 +55,8 @@ const Navbar = ({ setShowLogin, setIsSignUp }) => {
         <div className="flex justify-between h-20 items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 shrink-0">
-            <div className="bg-red-600 p-2 rounded-full border-2 border-white">
-              <Ghost className="text-white w-6 h-6" />
+            <div className="bg-red-600 p-2 rounded-xl">
+              <Logo className="text-white w-6 h-6" />
             </div>
             <span className="text-2xl font-black tracking-tighter italic text-white uppercase">
               Host<span className="text-red-600">Buster</span>
