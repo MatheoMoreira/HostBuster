@@ -52,11 +52,13 @@ class AdminUserController extends Controller
 
     private function buildCreditHistory(int $userId): array
     {
-        // MySQL stocke les TIMESTAMP en UTC. Eloquent les rend en Carbon (tz app),
-        // DB::table les rend en string brute UTC → on force tout en UTC ISO ici.
-        $toUtcIso = fn ($value) => $value instanceof Carbon
-            ? $value->copy()->utc()->toIso8601String()
-            : Carbon::parse((string) $value, 'UTC')->toIso8601String();
+        // Laravel écrit les timestamps avec now() (fuseau APP_TIMEZONE), MySQL les
+        // stocke tels quels en string. On les relit donc en interprétant l'heure
+        // dans le fuseau de l'app, puis on convertit en UTC pour le front.
+        $appTz = config('app.timezone');
+        $toUtcIso = fn ($value) => Carbon::parse((string) $value, $appTz)
+            ->utc()
+            ->toIso8601String();
 
         $adjustments = CreditAdjustment::with('admin:id,name')
             ->where('user_id', $userId)
