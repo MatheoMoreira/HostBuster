@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, ShieldCheck, Ban, Trash2, Loader2, Plus, Minus, Server, ShoppingCart, Wrench } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import Avatar from '../../components/Avatar';
 
 const AdminUserDetail = () => {
   const { id } = useParams();
@@ -75,10 +76,13 @@ const AdminUserDetail = () => {
         <ArrowLeft className="w-3 h-3" /> Retour
       </Link>
 
-      <div className="hb-rise mb-8" style={{ animationDelay: '80ms' }}>
-        <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-orange-400 mb-2">Utilisateur #{user.id}</p>
-        <h1 className="font-display text-4xl md:text-5xl font-black tracking-tighter uppercase text-white mb-1">{user.name}</h1>
-        <p className="text-zinc-400 font-mono text-sm">{user.email}</p>
+      <div className="hb-rise mb-8 flex items-center gap-5" style={{ animationDelay: '80ms' }}>
+        <Avatar name={user.name} email={user.email} size="xl" />
+        <div className="min-w-0">
+          <p className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-orange-400 mb-2">Utilisateur #{user.id}</p>
+          <h1 className="font-display text-4xl md:text-5xl font-black tracking-tighter uppercase text-white mb-1 truncate">@{user.username}</h1>
+          <p className="text-zinc-400 text-sm truncate">{user.name} · <span className="font-mono">{user.email}</span></p>
+        </div>
       </div>
 
       {error && (

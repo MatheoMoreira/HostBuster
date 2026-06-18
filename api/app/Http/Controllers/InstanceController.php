@@ -25,6 +25,13 @@ class InstanceController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->user()->email_verified_at === null) {
+            return response()->json([
+                'message' => 'Veuillez vérifier votre adresse email avant de déployer une instance.',
+                'code' => 'email_unverified',
+            ], 403);
+        }
+
         $data = $request->validate([
             'app_id' => ['required', 'integer', 'exists:applications,id'],
             'plan_name' => ['required', 'string', 'max:50'],

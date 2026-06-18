@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, ShieldCheck, User, Ban, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { apiFetch } from '../../api/client';
+import Avatar from '../../components/Avatar';
 
 const RoleBadge = ({ role }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.15em] border ${
@@ -51,7 +52,7 @@ const AdminUsers = () => {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Rechercher nom ou email..."
+            placeholder="Rechercher nom d'utilisateur, nom ou email..."
             className="w-full bg-zinc-900 border-2 border-zinc-800 rounded-sm py-2.5 pl-10 pr-3 text-sm font-bold focus:border-red-400 focus:outline-none transition-colors"
           />
         </div>
@@ -70,7 +71,7 @@ const AdminUsers = () => {
         <table className="w-full">
           <thead>
             <tr className="border-b-2 border-zinc-800 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500">
-              <th className="text-left py-3 px-4">Nom</th>
+              <th className="text-left py-3 px-4">Utilisateur</th>
               <th className="text-left py-3 px-4">Email</th>
               <th className="text-left py-3 px-4">Rôle</th>
               <th className="text-right py-3 px-4">Crédits</th>
@@ -88,7 +89,15 @@ const AdminUsers = () => {
             )}
             {!loading && data?.data?.map((u) => (
               <tr key={u.id} className="border-b border-zinc-800/60 hover:bg-red-500/5 transition-colors">
-                <td className="py-3 px-4 font-bold text-white">{u.name}</td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={u.name} email={u.email} size="sm" />
+                    <div className="min-w-0">
+                      <p className="font-bold text-white truncate">@{u.username}</p>
+                      <p className="text-[11px] text-zinc-500 truncate">{u.name}</p>
+                    </div>
+                  </div>
+                </td>
                 <td className="py-3 px-4 text-zinc-400 text-sm">{u.email}</td>
                 <td className="py-3 px-4"><RoleBadge role={u.role} /></td>
                 <td className="py-3 px-4 text-right font-mono font-bold text-yellow-400">{Math.trunc(Number(u.credits))}</td>
