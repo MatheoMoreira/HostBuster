@@ -14,6 +14,13 @@ class CreditController extends Controller
      */
     public function recharge(Request $request)
     {
+        if ($request->user()->email_verified_at === null) {
+            return response()->json([
+                'message' => 'Veuillez vérifier votre adresse email avant de recharger des crédits.',
+                'code' => 'email_unverified',
+            ], 403);
+        }
+
         $data = $request->validate([
             'credits' => ['required', 'integer', 'min:100', 'max:1000000'],
         ]);

@@ -10,8 +10,17 @@ use App\Http\Controllers\WorkerCallbackController;
 
 // Routes publiques
 Route::get('/apps', [ApplicationController::class, 'index']);
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+
+// Auth : throttle anti brute-force (6 tentatives/min/IP)
+Route::middleware('throttle:6,1')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+});
+
+// Vérification d'email via le lien reçu (jeton dans l'URL)
+Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 // Webhook Lion (auth par token partagé)
 Route::post('/worker/callback', WorkerCallbackController::class);
@@ -21,6 +30,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'me']);
     Route::patch('/user', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/email/resend', [AuthController::class, 'resendVerification']);
 
     Route::get('/instances', [InstanceController::class, 'index']);
     Route::get('/instances/{id}', [InstanceController::class, 'show']);

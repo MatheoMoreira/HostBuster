@@ -49,6 +49,22 @@ export const AuthProvider = ({ children }) => {
     return u;
   };
 
+  // Recharge l'utilisateur depuis l'API (ex: après vérification d'email).
+  const refreshUser = async () => {
+    if (!getToken()) return null;
+    const me = await apiFetch('/user');
+    setUser(me);
+    return me;
+  };
+
+  const resendVerification = () => apiFetch('/email/resend', { method: 'POST' });
+
+  const forgotPassword = (email) =>
+    apiFetch('/forgot-password', { method: 'POST', auth: false, body: { email } });
+
+  const resetPassword = (payload) =>
+    apiFetch('/reset-password', { method: 'POST', auth: false, body: payload });
+
   const logout = async () => {
     try {
       await apiFetch('/logout', { method: 'POST' });
@@ -67,6 +83,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
+    resendVerification,
+    forgotPassword,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

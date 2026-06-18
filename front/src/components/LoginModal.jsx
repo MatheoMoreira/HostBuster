@@ -14,7 +14,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
-  const { login, register } = useAuth();
+  const { login, register, forgotPassword } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
@@ -27,11 +27,28 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
   const [strength, setStrength] = useState({ score: 0, label: '', color: '', text: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState('');
 
   // Reset des erreurs quand on bascule connexion/inscription
   useEffect(() => {
     setError('');
   }, [isSignUp]);
+
+  const submitForgot = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await forgotPassword(forgotEmail);
+      setForgotSent(res?.message || 'Si un compte existe, un email vient d\'être envoyé.');
+    } catch (err) {
+      setError(err.message || 'Une erreur est survenue.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const checkStrength = (pass) => {
     setPassword(pass);
@@ -97,7 +114,60 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
       <div className="grain relative bg-zinc-900 border-2 border-zinc-800 w-full max-w-lg rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
         <div className="h-1.5 bg-[repeating-linear-gradient(45deg,#facc15,#facc15_10px,#000_10px,#000_20px)] w-full"></div>
 
+        {forgotMode ? (
+          <form onSubmit={submitForgot} className="relative z-10 p-8 md:p-12">
+            <div className="text-center mb-8">
+              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 inline-block mb-4">
+                <Fingerprint className="text-red-400 w-8 h-8" />
+              </div>
+              <h2 className="text-2xl font-black uppercase tracking-tighter text-white">Mot de passe oublié</h2>
+              <p className="text-zinc-500 font-bold text-[10px] uppercase tracking-widest mt-1">
+                On vous envoie un lien de réinitialisation
+              </p>
+            </div>
 
+            {error && (
+              <div className="mb-5 flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded p-3">
+                <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-[11px] font-bold text-red-400">{error}</p>
+              </div>
+            )}
+
+            {forgotSent ? (
+              <div className="text-center space-y-5">
+                <div className="bg-green-500/10 border border-green-500/30 rounded p-3 text-left">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-green-400 shrink-0" />
+                    <p className="text-[12px] font-bold text-green-400">{forgotSent}</p>
+                  </div>
+                  <p className="text-[11px] text-green-300/70 mt-1.5 ml-6">Pensez à vérifier vos spams.</p>
+                </div>
+                <button type="button" onClick={() => { setForgotMode(false); setForgotSent(''); }} className="text-red-400 font-black text-xs uppercase tracking-widest hover:underline">
+                  Retour à la connexion
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500 ml-1">Email</label>
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 group-focus-within:text-red-400 transition-colors" />
+                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="adresse@email.com" required className="w-full bg-zinc-950 border border-zinc-800 rounded py-3 pl-11 pr-4 focus:border-red-400 focus:outline-none transition-all font-bold text-sm text-white" />
+                  </div>
+                </div>
+                <button type="submit" disabled={submitting} className="w-full bg-white text-black font-black py-4 rounded-sm hover:bg-red-400 transition-all uppercase tracking-[0.2em] text-[11px] flex items-center justify-center gap-2 disabled:opacity-60">
+                  {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Envoyer le lien
+                </button>
+                <p className="text-center text-[11px] font-medium text-zinc-500">
+                  <span onClick={() => { setForgotMode(false); setError(''); }} className="text-red-400 cursor-pointer hover:underline font-black uppercase">
+                    Retour à la connexion
+                  </span>
+                </p>
+              </div>
+            )}
+          </form>
+        ) : (
         <form onSubmit={handleSubmit} className="relative z-10 p-8 md:p-12">
           <div className="text-center mb-8">
             <div className="relative inline-block mb-4">
@@ -173,7 +243,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
               <div className="flex justify-between items-end px-1">
                 <label className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500">Mot de passe</label>
                 {!isSignUp && (
-                  <button type="button" className="text-[10px] font-bold text-zinc-600 hover:text-red-400 transition-colors">
+                  <button type="button" onClick={() => { setForgotMode(true); setError(''); setForgotSent(''); setForgotEmail(loginId.includes('@') ? loginId : ''); }} className="text-[10px] font-bold text-zinc-600 hover:text-red-400 transition-colors">
                     Mot de passe oublié ?
                   </button>
                 )}
@@ -251,6 +321,7 @@ const LoginModal = ({ isSignUp, setIsSignUp, setShowLogin, onAuthSuccess }) => {
             </p>
           </div>
         </form>
+        )}
       </div>
     </div>
   );
