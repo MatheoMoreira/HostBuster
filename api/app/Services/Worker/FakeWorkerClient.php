@@ -94,4 +94,42 @@ class FakeWorkerClient implements WorkerClient
 
         return new InstanceState($instanceId, InstanceState::DELETED);
     }
+
+    public function listBackups(int $instanceId): array
+    {
+        return [];
+    }
+
+    public function createBackup(int $instanceId): array
+    {
+        return [
+            'name' => 'backup-' . now()->format('Ymd-His') . '.tar.gz',
+            'size_bytes' => mt_rand(1_000_000, 50_000_000),
+            'created_at' => now()->timestamp,
+        ];
+    }
+
+    public function restoreBackup(int $instanceId, string $name): void
+    {
+        Log::info('[FakeWorker] restoreBackup', ['id' => $instanceId, 'name' => $name]);
+    }
+
+    public function deleteBackup(int $instanceId, string $name): void
+    {
+        Log::info('[FakeWorker] deleteBackup', ['id' => $instanceId, 'name' => $name]);
+    }
+
+    public function getMetrics(int $instanceId): array
+    {
+        return [
+            'available'      => true,
+            'running'        => true,
+            'cpu_pct'        => mt_rand(2000, 4000) / 100,
+            'mem_used_mb'    => mt_rand(200, 600),
+            'mem_limit_mb'   => 1024,
+            'mem_pct'        => mt_rand(2000, 6000) / 100,
+            'started_at'     => now()->subMinutes(mt_rand(5, 1440))->toIso8601String(),
+            'uptime_seconds' => mt_rand(300, 86400),
+        ];
+    }
 }

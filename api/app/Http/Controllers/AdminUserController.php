@@ -17,7 +17,8 @@ class AdminUserController extends Controller
         if ($search = $request->string('search')->toString()) {
             $q->where(function ($w) use ($search) {
                 $w->where('username', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%")
+                  ->orWhere('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -62,7 +63,7 @@ class AdminUserController extends Controller
             ->utc()
             ->toIso8601String();
 
-        $adjustments = CreditAdjustment::with('admin:id,name')
+        $adjustments = CreditAdjustment::with('admin:id,first_name,last_name')
             ->where('user_id', $userId)
             ->get()
             ->map(fn ($a) => [
@@ -121,7 +122,8 @@ class AdminUserController extends Controller
         $user = User::findOrFail($id);
 
         $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100'],
+            'first_name' => ['sometimes', 'string', 'max:100'],
+            'last_name' => ['sometimes', 'string', 'max:100'],
             'email' => ['sometimes', 'email', 'max:150', "unique:users,email,{$id}"],
             'role' => ['sometimes', 'in:admin,client'],
         ]);

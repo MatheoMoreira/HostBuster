@@ -35,12 +35,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/instances', [InstanceController::class, 'index']);
     Route::get('/instances/{id}', [InstanceController::class, 'show']);
+    Route::get('/instances/{id}/metrics', [InstanceController::class, 'metrics']);
     Route::post('/instances', [InstanceController::class, 'store']);
     Route::patch('/instances/{id}', [InstanceController::class, 'update']);
     Route::post('/instances/{id}/start', [InstanceController::class, 'start']);
     Route::post('/instances/{id}/stop', [InstanceController::class, 'stop']);
     Route::post('/instances/{id}/renew', [InstanceController::class, 'renew']);
     Route::delete('/instances/{id}', [InstanceController::class, 'destroy']);
+
+    // Sauvegardes (snapshot des volumes de données)
+    Route::get('/instances/{id}/backups', [InstanceController::class, 'backupsIndex']);
+    Route::post('/instances/{id}/backups', [InstanceController::class, 'backupCreate']);
+    Route::post('/instances/{id}/backups/{name}/restore', [InstanceController::class, 'backupRestore']);
+    Route::delete('/instances/{id}/backups/{name}', [InstanceController::class, 'backupDelete']);
 
     Route::post('/credits/recharge', [CreditController::class, 'recharge']);
 

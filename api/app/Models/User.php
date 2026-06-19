@@ -12,12 +12,23 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['username', 'first_name', 'last_name', 'name', 'email', 'password', 'role'])]
+#[Fillable(['username', 'first_name', 'last_name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+
+    /**
+     * Nom d'affichage complet, dérivé de first_name + last_name.
+     * (Plus de colonne `name` en base : c'est un attribut calculé.)
+     */
+    protected $appends = ['name'];
+
+    public function getNameAttribute(): string
+    {
+        return trim(($this->first_name ?? '').' '.($this->last_name ?? ''));
+    }
 
     /**
      * Get the attributes that should be cast.

@@ -20,7 +20,7 @@ class AdminInstanceController extends Controller
                 'instances.*',
                 'applications.name as app_name',
                 'users.username as user_username',
-                'users.name as user_name',
+                DB::raw("TRIM(CONCAT(COALESCE(users.first_name,''),' ',COALESCE(users.last_name,''))) as user_name"),
                 'users.email as user_email',
             );
 
@@ -29,7 +29,8 @@ class AdminInstanceController extends Controller
                 $w->where('instances.instance_name', 'like', "%{$search}%")
                   ->orWhere('users.username', 'like', "%{$search}%")
                   ->orWhere('users.email', 'like', "%{$search}%")
-                  ->orWhere('users.name', 'like', "%{$search}%");
+                  ->orWhere('users.first_name', 'like', "%{$search}%")
+                  ->orWhere('users.last_name', 'like', "%{$search}%");
             });
         }
 
