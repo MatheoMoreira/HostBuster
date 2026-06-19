@@ -33,7 +33,6 @@ class AuthController extends Controller
             'username' => $data['username'],
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
-            'name' => trim($data['first_name'].' '.$data['last_name']),
             'email' => $data['email'],
             'password' => $data['password'],
         ]);
@@ -147,11 +146,6 @@ class AuthController extends Controller
         }
         if (isset($data['email'])) {
             $user->email = $data['email'];
-        }
-
-        // `name` reste synchronisé comme nom d'affichage complet.
-        if (isset($data['first_name']) || isset($data['last_name'])) {
-            $user->name = trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
         }
 
         $user->save();

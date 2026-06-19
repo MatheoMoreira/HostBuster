@@ -44,7 +44,6 @@ class MakeAdmin extends Command
             'username' => $username,
             'first_name' => $this->option('name'),
             'last_name' => '',
-            'name' => $this->option('name'),
             'email' => $email,
             'password' => Hash::make($password),
         ]);
