@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\InstanceNotifier;
 use App\Services\Worker\CreateInstanceRequest;
 use App\Services\Worker\UpdateInstanceRequest;
 use App\Services\Worker\WorkerClient;
@@ -11,7 +12,10 @@ use Illuminate\Support\Facades\URL;
 
 class InstanceController extends Controller
 {
-    public function __construct(private readonly WorkerClient $worker) {}
+    public function __construct(
+        private readonly WorkerClient $worker,
+        private readonly InstanceNotifier $notifier,
+    ) {}
 
     public function index(Request $request)
     {
@@ -64,6 +68,9 @@ class InstanceController extends Controller
                 'ram_allocated' => $data['ram'],
                 'storage_allocated' => $data['storage'],
                 'status' => 'deploying',
+                // Abonnement : 1er mois payé maintenant, prix mémorisé pour le renouvellement.
+                'paid_until' => now()->addDays(30),
+                'monthly_price' => $data['price'],
                 'created_at' => now(),
             ]);
 
@@ -88,8 +95,16 @@ class InstanceController extends Controller
             cpu: (int) $data['cpu'],
             ram: (int) $data['ram'],
             storage: (int) $data['storage'],
-            callbackUrl: URL::to('/api/worker/callback'),
+            callbackUrl: config('worker.callback_url') ?: URL::to('/api/worker/callback'),
         ));
+
+        // Pas d'email à la création : un seul mail à l'arrivée en ligne (callback).
+        DB::table('notifications')->insert([
+            'user_id' => $user->id,
+            'type' => 'info',
+            'message' => "Déploiement de « {$instance->instance_name} » lancé.",
+            'sent_at' => now(),
+        ]);
 
         return response()->json([
             'instance' => $instance,
@@ -143,6 +158,9 @@ class InstanceController extends Controller
         $this->ensureOwner($request, $id);
         $state = $this->worker->startInstance($id);
 
+        // L'API est propriétaire de sa BDD : on persiste le nouvel état.
+        DB::table('instances')->where('id', $id)->update(['status' => 'running']);
+
         return response()->json(['status' => $state->status]);
     }
 
@@ -151,7 +169,71 @@ class InstanceController extends Controller
         $this->ensureOwner($request, $id);
         $state = $this->worker->stopInstance($id);
 
+        DB::table('instances')->where('id', $id)->update(['status' => 'stopped']);
+
         return response()->json(['status' => $state->status]);
+    }
+
+    /**
+     * Renouvellement de l'abonnement : débite le prix mensuel, prolonge de 30
+     * jours, annule la suppression programmée et redémarre si en grâce.
+     */
+    public function renew(Request $request, int $id)
+    {
+        $user = $request->user();
+        $instance = DB::table('instances')
+            ->where('id', $id)->where('user_id', $user->id)->first();
+
+        abort_if(! $instance, 404);
+        abort_if($instance->status === 'deleted', 422, 'Instance supprimée.');
+
+        $price = (int) ($instance->monthly_price ?? 0);
+        if ((int) $user->credits < $price) {
+            return response()->json([
+                'message' => 'Crédits insuffisants pour le renouvellement.',
+                'required' => $price,
+                'available' => (int) $user->credits,
+            ], 422);
+        }
+
+        $wasInGrace = $instance->scheduled_deletion_at !== null;
+
+        DB::transaction(function () use ($user, $instance, $price) {
+            $user->credits = (float) $user->credits - $price;
+            $user->save();
+
+            DB::table('orders')->insert([
+                'user_id' => $user->id,
+                'instance_id' => $instance->id,
+                'amount' => $price,
+                'type' => 'renewal',
+                'status' => 'completed',
+                'created_at' => now(),
+            ]);
+
+            // Prolonge à partir de la fin de période en cours (ou de maintenant si déjà dépassée).
+            $base = \Illuminate\Support\Carbon::parse($instance->paid_until);
+            if ($base->isPast()) {
+                $base = now();
+            }
+
+            DB::table('instances')->where('id', $instance->id)->update([
+                'paid_until' => $base->copy()->addDays(30),
+                'scheduled_deletion_at' => null,
+                'last_reminder' => null,
+            ]);
+        });
+
+        // Si l'instance était bloquée (période de grâce), on la redémarre.
+        if ($wasInGrace && $instance->status === 'stopped') {
+            $this->worker->startInstance($id);
+            DB::table('instances')->where('id', $id)->update(['status' => 'running']);
+        }
+
+        return response()->json([
+            'instance' => DB::table('instances')->find($id),
+            'credits' => (int) $user->fresh()->credits,
+        ]);
     }
 
     private function ensureOwner(Request $request, int $id): void
@@ -173,6 +255,11 @@ class InstanceController extends Controller
         abort_if(! $instance, 404);
 
         $this->worker->deleteInstance($id);
+
+        // Marque l'instance supprimée côté BDD (le worker a détruit les conteneurs).
+        DB::table('instances')->where('id', $id)->update(['status' => 'deleted']);
+
+        $this->notifier->deleted($instance, $request->user());
 
         return response()->noContent();
     }
