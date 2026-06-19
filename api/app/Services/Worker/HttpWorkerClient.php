@@ -70,12 +70,46 @@ class HttpWorkerClient implements WorkerClient
         return new InstanceState($instanceId, InstanceState::DELETED);
     }
 
-    private function http()
+    public function getMetrics(int $instanceId): array
+    {
+        $response = $this->http()->get("/v1/instances/{$instanceId}/metrics");
+        $this->ensureOk($response);
+        return $response->json() ?? [];
+    }
+
+    public function listBackups(int $instanceId): array
+    {
+        $response = $this->http()->get("/v1/instances/{$instanceId}/backups");
+        $this->ensureOk($response);
+        return $response->json('backups', []);
+    }
+
+    public function createBackup(int $instanceId): array
+    {
+        // tar peut être long : timeout étendu.
+        $response = $this->http(300)->post("/v1/instances/{$instanceId}/backups");
+        $this->ensureOk($response, [200, 201]);
+        return $response->json() ?? [];
+    }
+
+    public function restoreBackup(int $instanceId, string $name): void
+    {
+        $response = $this->http(300)->post("/v1/instances/{$instanceId}/backups/" . rawurlencode($name) . "/restore");
+        $this->ensureOk($response, [200, 202]);
+    }
+
+    public function deleteBackup(int $instanceId, string $name): void
+    {
+        $response = $this->http()->delete("/v1/instances/{$instanceId}/backups/" . rawurlencode($name));
+        $this->ensureOk($response, [204, 200]);
+    }
+
+    private function http(?int $timeout = null)
     {
         return Http::baseUrl($this->baseUrl)
             ->withToken($this->token)
             ->acceptJson()
-            ->timeout($this->timeoutSeconds);
+            ->timeout($timeout ?? $this->timeoutSeconds);
     }
 
     private function ensureOk($response, array $allowed = [200]): void

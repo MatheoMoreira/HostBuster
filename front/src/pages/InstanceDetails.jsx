@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play,
   Square,
@@ -14,6 +14,9 @@ import {
   Loader2,
   AlertCircle,
   ExternalLink,
+  RotateCcw,
+  Save,
+  Archive,
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Server } from 'lucide-react';
@@ -30,18 +33,18 @@ const STATUS_META = {
   deleted:      { label: 'Supprimée',   cls: 'bg-zinc-500/10 text-zinc-500',   dot: 'bg-zinc-500',  spin: false },
 };
 
-// Métriques fakes (pas de vraie supervision côté Abeille pour l'instant)
-const randomJitter = (base, spread) => Math.max(0, Math.min(100, base + (Math.random() - 0.5) * spread));
-
-const formatUptime = (createdAt) => {
-  if (!createdAt) return '—';
-  const created = new Date(createdAt.replace(' ', 'T'));
-  const diffMs = Date.now() - created.getTime();
-  if (Number.isNaN(diffMs) || diffMs < 0) return '—';
-  const days = Math.floor(diffMs / 86_400_000);
-  const hours = Math.floor((diffMs % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((diffMs % 3_600_000) / 60_000);
-  return `${days}j ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m`;
+// 2 unités les plus fortes, unité secondaire zero-paddée, unités nulles masquées.
+const formatUptimeSeconds = (seconds) => {
+  if (seconds == null || Number.isNaN(seconds) || seconds < 0) return '—';
+  const s = Math.floor(seconds);
+  const d = Math.floor(s / 86_400);
+  const h = Math.floor((s % 86_400) / 3_600);
+  const m = Math.floor((s % 3_600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}j ${String(h).padStart(2, '0')}h`;
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
+  if (m > 0) return `${m}m ${String(sec).padStart(2, '0')}s`;
+  return `${sec}s`;
 };
 
 const InstanceDetails = () => {
@@ -54,16 +57,27 @@ const InstanceDetails = () => {
   const [activeTab, setActiveTab] = useState('console');
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'start' | 'stop'
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Bouton "Ouvrir" désactivé qq sec juste après un déploiement (marge pour le
+  // certificat TLS / la prise en compte par le proxy).
+  const [openCooldown, setOpenCooldown] = useState(0);
+  const prevStatusRef = useRef(null);
 
-  // Métriques fake qui bougent légèrement pour faire vivre l'UI
+  // Métriques live remontées par le worker (docker stats)
   const [metrics, setMetrics] = useState({
-    cpuHistory: [32, 35, 31, 40, 38, 33, 35],
-    cpuPct: 32,
-    ramPct: 30,
-    diskPct: 18,
+    available: false,
+    cpuPct: null,
+    cpuHistory: [],
+    memUsedMb: null,
+    memLimitMb: null,
+    memPct: null,
+    diskUsedMb: null,
+    uptimeSeconds: null,
+    startedAt: null,
   });
+  const [, setTick] = useState(0); // force le recalcul de l'uptime chaque seconde
 
   const load = useCallback(async () => {
     try {
@@ -82,17 +96,38 @@ const InstanceDetails = () => {
   }, [load]);
 
   useEffect(() => {
-    if (!instance || instance.status !== 'running') return;
-    const id = setInterval(() => {
-      setMetrics((m) => ({
-        cpuHistory: [...m.cpuHistory.slice(1), randomJitter(m.cpuPct, 20)],
-        cpuPct: randomJitter(m.cpuPct, 10),
-        ramPct: randomJitter(m.ramPct, 5),
-        diskPct: Math.min(100, m.diskPct + Math.random() * 0.05),
-      }));
-    }, 1500);
-    return () => clearInterval(id);
-  }, [instance]);
+    if (!instance || instance.status !== 'running') {
+      setMetrics((m) => ({ ...m, available: false }));
+      return;
+    }
+    let cancelled = false;
+    const fetchMetrics = async () => {
+      try {
+        const data = await apiFetch(`/instances/${id}/metrics`);
+        if (cancelled) return;
+        if (!data?.available) {
+          setMetrics((m) => ({ ...m, available: false }));
+          return;
+        }
+        setMetrics((m) => ({
+          available: true,
+          cpuPct: data.cpu_pct,
+          cpuHistory: [...m.cpuHistory.slice(-13), data.cpu_pct ?? 0].slice(-14),
+          memUsedMb: data.mem_used_mb,
+          memLimitMb: data.mem_limit_mb,
+          memPct: data.mem_pct,
+          diskUsedMb: data.disk_used_mb,
+          uptimeSeconds: data.uptime_seconds,
+          startedAt: data.started_at,
+        }));
+      } catch {
+        if (!cancelled) setMetrics((m) => ({ ...m, available: false }));
+      }
+    };
+    fetchMetrics();
+    const handle = setInterval(fetchMetrics, 3000);
+    return () => { cancelled = true; clearInterval(handle); };
+  }, [instance, id]);
 
   const copyAddress = (value) => {
     navigator.clipboard.writeText(value);
@@ -102,17 +137,54 @@ const InstanceDetails = () => {
 
   const handleAction = async (action) => {
     setActing(true);
+    setPendingAction(action);
     try {
+      // Le worker traite l'action en tâche de fond (202). On garde le loader
+      // jusqu'à ce que le statut poll atteigne la cible (voir l'effet ci-dessous).
       await apiFetch(`/instances/${id}/${action}`, { method: 'POST' });
       await load();
-      const labels = { start: 'Instance démarrée.', stop: 'Instance arrêtée.' };
-      toast.success(labels[action] || 'Action effectuée.');
     } catch (e) {
       toast.error(e.message);
-    } finally {
       setActing(false);
+      setPendingAction(null);
     }
   };
+
+  // Au passage "déploiement -> en ligne", on bloque "Ouvrir" 10 s.
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    if (instance && instance.status === 'running'
+        && (prev === 'deploying' || prev === 'provisioning')) {
+      setOpenCooldown(30);
+    }
+    if (instance) prevStatusRef.current = instance.status;
+  }, [instance?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Décompte du cooldown.
+  useEffect(() => {
+    if (openCooldown <= 0) return;
+    const t = setTimeout(() => setOpenCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [openCooldown]);
+
+  // Tick local : fait défiler l'uptime à la seconde entre deux samples worker.
+  useEffect(() => {
+    if (instance?.status !== 'running') return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [instance?.status]);
+
+  // Fin du loader quand l'instance a réellement atteint l'état visé.
+  useEffect(() => {
+    if (!pendingAction || !instance) return;
+    const target = pendingAction === 'start' ? 'running' : 'stopped';
+    if (instance.status === target) {
+      toast.success(pendingAction === 'start' ? 'Instance démarrée.' : 'Instance arrêtée.');
+      setActing(false);
+      setPendingAction(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instance?.status, pendingAction]);
 
   const confirmDelete = async () => {
     setDeleting(true);
@@ -231,10 +303,28 @@ const InstanceDetails = () => {
   }
 
   const meta = STATUS_META[instance.status] || STATUS_META.error;
-  const kpisInactive = ['stopped', 'deploying', 'provisioning'].includes(instance.status);
+  // Tant que le premier sample du worker n'est pas arrivé : skeleton.
+  const kpisLoading = instance.status === 'running' && metrics.cpuPct == null;
+  // Skeleton uniquement pendant un chargement réel (déploiement / 1er sample).
+  // Une instance arrêtée n'est pas "en chargement" : on montre des "—".
+  const kpisSkeleton = ['deploying', 'provisioning'].includes(instance.status) || kpisLoading;
+  const liveAvailable = metrics.available && instance.status === 'running' && metrics.cpuPct != null;
   const ramTotalGb = (instance.ram_allocated / 1024).toFixed(1);
-  const ramUsedGb = ((instance.ram_allocated / 1024) * (metrics.ramPct / 100)).toFixed(2);
-  const diskUsedGb = (instance.storage_allocated * (metrics.diskPct / 100)).toFixed(1);
+  const ramUsedGb = liveAvailable && metrics.memUsedMb != null
+    ? (metrics.memUsedMb / 1024).toFixed(2)
+    : null;
+  const ramPctDisplay = liveAvailable && metrics.memPct != null ? metrics.memPct : 0;
+  const cpuPctDisplay = liveAvailable && metrics.cpuPct != null ? metrics.cpuPct : 0;
+  const diskUsedGb = liveAvailable && metrics.diskUsedMb != null
+    ? (metrics.diskUsedMb / 1024).toFixed(2)
+    : null;
+  const diskPctDisplay = liveAvailable && metrics.diskUsedMb != null && instance.storage_allocated
+    ? Math.min(100, (metrics.diskUsedMb / 1024 / instance.storage_allocated) * 100)
+    : 0;
+  // Uptime live : recalculé depuis started_at (sinon repli sur la valeur worker).
+  const liveUptime = metrics.startedAt
+    ? Math.max(0, (Date.now() - Date.parse(metrics.startedAt)) / 1000)
+    : metrics.uptimeSeconds;
   const ipv6 = instance.ipv6_address || '—';
 
   return (
@@ -277,28 +367,41 @@ const InstanceDetails = () => {
 
         <div className="flex gap-2 w-full lg:w-auto">
           {instance.domain && instance.status === 'running' && instance.domain.startsWith('http') && (
-            <a
-              href={instance.domain}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
-            >
-              <ExternalLink className="w-3.5 h-3.5" /> Ouvrir
-            </a>
+            openCooldown > 0 ? (
+              <span
+                title="Démarrage des services en cours…"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-green-600/40 text-white/70 px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest cursor-not-allowed"
+              >
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Ouvrir ({openCooldown}s)
+              </span>
+            ) : (
+              <a
+                href={instance.domain}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                <ExternalLink className="w-3.5 h-3.5" /> Ouvrir
+              </a>
+            )
           )}
           <button
             onClick={() => handleAction('start')}
             disabled={acting || instance.status === 'running' || instance.status === 'deploying' || instance.status === 'deleted'}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:hover:bg-zinc-800"
           >
-            <Play className="w-3.5 h-3.5 fill-current" /> Démarrer
+            {pendingAction === 'start'
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Démarrage…</>
+              : <><Play className="w-3.5 h-3.5 fill-current" /> Démarrer</>}
           </button>
           <button
             onClick={() => handleAction('stop')}
             disabled={acting || instance.status !== 'running'}
             className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40 disabled:hover:bg-zinc-800"
           >
-            <Square className="w-3.5 h-3.5 fill-current" /> Arrêter
+            {pendingAction === 'stop'
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Arrêt…</>
+              : <><Square className="w-3.5 h-3.5 fill-current" /> Arrêter</>}
           </button>
           <button
             onClick={() => setShowDelete(true)}
@@ -313,7 +416,7 @@ const InstanceDetails = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-8">
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm">
           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Utilisation CPU</p>
-          {kpisInactive ? (
+          {kpisSkeleton ? (
             <>
               <div className="h-9 w-24 bg-zinc-800 rounded-sm animate-pulse mb-4" />
               <div className="h-8 w-full bg-zinc-800 rounded-sm animate-pulse" />
@@ -321,12 +424,14 @@ const InstanceDetails = () => {
           ) : (
             <>
               <div className="flex items-end gap-2 mb-4">
-                <span className="text-3xl font-black text-white">{metrics.cpuPct.toFixed(0)}%</span>
+                <span className="text-3xl font-black text-white">
+                  {liveAvailable ? `${cpuPctDisplay.toFixed(1)}%` : '—'}
+                </span>
                 <span className="text-zinc-600 text-[10px] font-bold pb-1 uppercase">{instance.cpu_allocated} vCPU</span>
               </div>
               <div className="flex gap-1 h-8 items-end">
-                {metrics.cpuHistory.map((val, i) => (
-                  <div key={i} className="flex-1 bg-red-500/20 hover:bg-red-500/40 transition-all rounded-t-sm" style={{ height: `${val}%` }}></div>
+                {(metrics.cpuHistory.length ? metrics.cpuHistory : Array(14).fill(0)).map((val, i) => (
+                  <div key={i} className="flex-1 bg-red-500/20 hover:bg-red-500/40 transition-all rounded-t-sm" style={{ height: `${Math.min(100, Math.max(2, val || 0))}%` }}></div>
                 ))}
               </div>
             </>
@@ -335,7 +440,7 @@ const InstanceDetails = () => {
 
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm">
           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Mémoire vive (RAM)</p>
-          {kpisInactive ? (
+          {kpisSkeleton ? (
             <>
               <div className="h-9 w-28 bg-zinc-800 rounded-sm animate-pulse mb-4" />
               <div className="h-1.5 w-full bg-zinc-800 rounded-full animate-pulse" />
@@ -343,11 +448,13 @@ const InstanceDetails = () => {
           ) : (
             <>
               <div className="flex items-end gap-2 mb-4">
-                <span className="text-3xl font-black text-white">{ramUsedGb} Go</span>
+                <span className="text-3xl font-black text-white">
+                  {liveAvailable && ramUsedGb ? `${ramUsedGb} Go` : '—'}
+                </span>
                 <span className="text-zinc-600 text-[10px] font-bold pb-1 uppercase">Sur {ramTotalGb} Go</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-red-500 h-full transition-all" style={{ width: `${metrics.ramPct}%` }}></div>
+                <div className="bg-red-500 h-full transition-all" style={{ width: `${ramPctDisplay}%` }}></div>
               </div>
             </>
           )}
@@ -355,7 +462,7 @@ const InstanceDetails = () => {
 
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm">
           <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Stockage NVMe</p>
-          {kpisInactive ? (
+          {kpisSkeleton ? (
             <>
               <div className="h-9 w-28 bg-zinc-800 rounded-sm animate-pulse mb-4" />
               <div className="h-1.5 w-full bg-zinc-800 rounded-full animate-pulse" />
@@ -363,24 +470,27 @@ const InstanceDetails = () => {
           ) : (
             <>
               <div className="flex items-end gap-2 mb-4">
-                <span className="text-3xl font-black text-white">{diskUsedGb} Go</span>
+                <span className="text-3xl font-black text-white">
+                  {diskUsedGb ? `${diskUsedGb} Go` : '—'}
+                </span>
                 <span className="text-zinc-600 text-[10px] font-bold pb-1 uppercase">Sur {instance.storage_allocated} Go</span>
               </div>
               <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-red-500 h-full transition-all" style={{ width: `${metrics.diskPct}%` }}></div>
+                <div className="bg-red-500 h-full transition-all" style={{ width: `${diskPctDisplay}%` }}></div>
               </div>
             </>
           )}
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm flex flex-col justify-between">
-          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Temps de disponibilité</p>
-          {kpisInactive ? (
-            <div className="h-8 w-32 bg-zinc-800 rounded-sm animate-pulse my-1" />
+        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm">
+          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Temps de disponibilité</p>
+          {kpisSkeleton ? (
+            <div className="h-9 w-32 bg-zinc-800 rounded-sm animate-pulse" />
           ) : (
-            <div className="text-2xl font-black text-white uppercase tracking-tighter">{formatUptime(instance.created_at)}</div>
+            <div className="text-3xl font-black text-white uppercase tracking-tighter">
+              {liveAvailable ? formatUptimeSeconds(liveUptime) : '—'}
+            </div>
           )}
-          <p className="text-[9px] font-bold text-green-500 uppercase tracking-widest">SLA 99.99% respecté</p>
         </div>
       </div>
 
@@ -431,7 +541,11 @@ const InstanceDetails = () => {
             </div>
           )}
 
-          {activeTab !== 'console' && activeTab !== 'network' && (
+          {activeTab === 'backups' && (
+            <BackupsTab instanceId={id} canManage={instance.status !== 'deleted'} />
+          )}
+
+          {activeTab !== 'console' && activeTab !== 'network' && activeTab !== 'backups' && (
             <div className="p-12 text-center">
               <p className="text-zinc-500 font-bold text-xs uppercase tracking-[0.2em]">
                 Configuration {activeTab} en cours de chargement...
@@ -448,6 +562,159 @@ const InstanceDetails = () => {
           onConfirm={confirmDelete}
           onClose={() => (deleting ? null : setShowDelete(false))}
         />
+      )}
+    </div>
+  );
+};
+
+const formatBytes = (b) => {
+  if (!b && b !== 0) return '—';
+  if (b < 1024) return `${b} o`;
+  if (b < 1_048_576) return `${(b / 1024).toFixed(0)} Ko`;
+  if (b < 1_073_741_824) return `${(b / 1_048_576).toFixed(1)} Mo`;
+  return `${(b / 1_073_741_824).toFixed(2)} Go`;
+};
+
+const BackupsTab = ({ instanceId, canManage }) => {
+  const toast = useToast();
+  const [backups, setBackups] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [busy, setBusy] = useState(null); // nom en cours de restore/delete
+  const [confirm, setConfirm] = useState(null); // { action, name }
+
+  const reload = useCallback(async () => {
+    try {
+      const data = await apiFetch(`/instances/${instanceId}/backups`);
+      setBackups(data.backups || []);
+    } catch {
+      setBackups([]);
+    }
+  }, [instanceId]);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      await apiFetch(`/instances/${instanceId}/backups`, { method: 'POST' });
+      toast.success('Sauvegarde créée.');
+      await reload();
+    } catch (e) {
+      toast.error(e.message || 'Échec de la sauvegarde.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const runConfirmed = async () => {
+    const { action, name } = confirm;
+    setConfirm(null);
+    setBusy(name);
+    try {
+      if (action === 'restore') {
+        await apiFetch(`/instances/${instanceId}/backups/${encodeURIComponent(name)}/restore`, { method: 'POST' });
+        toast.success('Restauration lancée. L\'instance redémarre.');
+      } else {
+        await apiFetch(`/instances/${instanceId}/backups/${encodeURIComponent(name)}`, { method: 'DELETE' });
+        toast.success('Sauvegarde supprimée.');
+      }
+      await reload();
+    } catch (e) {
+      toast.error(e.message || 'Action impossible.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <p className="text-sm font-black text-white uppercase tracking-tight">Sauvegardes</p>
+          <p className="text-[11px] text-zinc-500 font-bold mt-0.5">Snapshot des données de l'instance (restaurable à tout moment).</p>
+        </div>
+        <button
+          onClick={handleCreate}
+          disabled={creating || !canManage}
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40"
+        >
+          {creating
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sauvegarde…</>
+            : <><Save className="w-3.5 h-3.5" /> Nouvelle sauvegarde</>}
+        </button>
+      </div>
+
+      {backups === null ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-14 bg-zinc-800/50 rounded-sm animate-pulse" />
+          ))}
+        </div>
+      ) : backups.length === 0 ? (
+        <div className="text-center py-12">
+          <Archive className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+          <p className="text-zinc-500 text-sm font-bold">Aucune sauvegarde pour le moment.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-zinc-800 border border-zinc-800 rounded-sm">
+          {backups.map((b) => (
+            <div key={b.name} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <Archive className="w-4 h-4 text-zinc-500 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-white truncate">{b.name}</p>
+                  <p className="text-[11px] text-zinc-500 font-bold">
+                    {formatBytes(b.size_bytes)} · {new Date(b.created_at * 1000).toLocaleString('fr-FR')}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setConfirm({ action: 'restore', name: b.name })}
+                  disabled={busy === b.name || !canManage}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-40"
+                >
+                  {busy === b.name ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                  Restaurer
+                </button>
+                <button
+                  onClick={() => setConfirm({ action: 'delete', name: b.name })}
+                  disabled={busy === b.name}
+                  className="flex items-center gap-1.5 text-zinc-500 hover:text-red-400 px-2 py-2 rounded-sm transition-all disabled:opacity-40"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4" onClick={() => setConfirm(null)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-sm p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white font-black uppercase tracking-tight mb-2">
+              {confirm.action === 'restore' ? 'Restaurer cette sauvegarde ?' : 'Supprimer cette sauvegarde ?'}
+            </p>
+            <p className="text-zinc-400 text-sm mb-6">
+              {confirm.action === 'restore'
+                ? 'Les données actuelles de l\'instance seront remplacées par celles de la sauvegarde. L\'instance va redémarrer.'
+                : 'Cette sauvegarde sera définitivement supprimée.'}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setConfirm(null)} className="px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest text-zinc-400 hover:text-white">
+                Annuler
+              </button>
+              <button
+                onClick={runConfirmed}
+                className={`px-4 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest text-white ${confirm.action === 'restore' ? 'bg-red-600 hover:bg-red-500' : 'bg-red-600 hover:bg-red-500'}`}
+              >
+                {confirm.action === 'restore' ? 'Restaurer' : 'Supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

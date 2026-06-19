@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Server, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import Avatar from '../../components/Avatar';
@@ -20,6 +20,7 @@ const AdminInstances = () => {
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -103,13 +104,21 @@ const AdminInstances = () => {
             {!loading && data?.data?.map((inst) => {
               const meta = STATUS_META[inst.status] || STATUS_META.error;
               return (
-                <tr key={inst.id} className="border-b border-zinc-800/60 hover:bg-red-500/5 transition-colors">
+                <tr
+                  key={inst.id}
+                  onClick={() => navigate(`/instance/${inst.id}`)}
+                  className="border-b border-zinc-800/60 hover:bg-red-500/5 transition-colors cursor-pointer"
+                >
                   <td className="py-3 px-4">
                     <p className="font-bold text-white truncate">{inst.instance_name}</p>
                     <p className="text-[11px] font-mono text-zinc-500">#{inst.id}</p>
                   </td>
                   <td className="py-3 px-4">
-                    <Link to={`/admin/users/${inst.user_id}`} className="flex items-center gap-2 hover:text-red-400 transition-colors">
+                    <Link
+                      to={`/admin/users/${inst.user_id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-2 hover:text-red-400 transition-colors"
+                    >
                       <Avatar name={inst.user_name} email={inst.user_email} size="sm" />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-white truncate">@{inst.user_username}</p>
@@ -129,7 +138,7 @@ const AdminInstances = () => {
                   <td className="py-3 px-4 text-zinc-500 text-xs font-mono">{new Date(inst.created_at).toLocaleDateString('fr-FR')}</td>
                   <td className="py-3 px-4 text-right">
                     {inst.domain && inst.status === 'running' && inst.domain.startsWith('http') && (
-                      <a href={inst.domain} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black uppercase tracking-widest text-green-400 hover:text-green-300">
+                      <a href={inst.domain} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[10px] font-black uppercase tracking-widest text-green-400 hover:text-green-300">
                         Ouvrir →
                       </a>
                     )}

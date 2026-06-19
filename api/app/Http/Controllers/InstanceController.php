@@ -114,16 +114,90 @@ class InstanceController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $instance = DB::table('instances')
+        $query = DB::table('instances')
             ->leftJoin('applications', 'applications.id', '=', 'instances.app_id')
             ->where('instances.id', $id)
-            ->where('instances.user_id', $request->user()->id)
-            ->select('instances.*', 'applications.name as app_name')
-            ->first();
+            ->select('instances.*', 'applications.name as app_name');
 
+        if ($request->user()->role !== 'admin') {
+            $query->where('instances.user_id', $request->user()->id);
+        }
+
+        $instance = $query->first();
         abort_if(! $instance, 404);
 
         return response()->json($instance);
+    }
+
+    public function metrics(Request $request, int $id)
+    {
+        $query = DB::table('instances')->where('id', $id);
+        if ($request->user()->role !== 'admin') {
+            $query->where('user_id', $request->user()->id);
+        }
+        $instance = $query->first();
+
+        abort_if(! $instance, 404);
+
+        if ($instance->status !== 'running') {
+            return response()->json([
+                'available' => false,
+                'reason' => 'not_running',
+                'status' => $instance->status,
+            ]);
+        }
+
+        try {
+            return response()->json($this->worker->getMetrics($id));
+        } catch (\Throwable $e) {
+            return response()->json(['available' => false, 'reason' => 'worker_unreachable'], 200);
+        }
+    }
+
+    public function backupsIndex(Request $request, int $id)
+    {
+        $this->ensureOwner($request, $id);
+        try {
+            return response()->json(['backups' => $this->worker->listBackups($id)]);
+        } catch (\Throwable $e) {
+            return response()->json(['backups' => []]);
+        }
+    }
+
+    public function backupCreate(Request $request, int $id)
+    {
+        $this->ensureOwner($request, $id);
+        try {
+            return response()->json($this->worker->createBackup($id), 201);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Échec de la sauvegarde.'], 422);
+        }
+    }
+
+    public function backupRestore(Request $request, int $id, string $name)
+    {
+        $this->ensureOwner($request, $id);
+        abort_unless($this->isValidBackupName($name), 422, 'Nom de sauvegarde invalide.');
+        try {
+            $this->worker->restoreBackup($id, $name);
+            DB::table('instances')->where('id', $id)->update(['status' => 'running']);
+            return response()->json(['status' => 'running']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Échec de la restauration.'], 422);
+        }
+    }
+
+    public function backupDelete(Request $request, int $id, string $name)
+    {
+        $this->ensureOwner($request, $id);
+        abort_unless($this->isValidBackupName($name), 422, 'Nom de sauvegarde invalide.');
+        $this->worker->deleteBackup($id, $name);
+        return response()->noContent();
+    }
+
+    private function isValidBackupName(string $name): bool
+    {
+        return (bool) preg_match('/^backup-\d{8}-\d{6}\.tar\.gz$/', $name);
     }
 
     public function update(Request $request, int $id)
@@ -238,28 +312,29 @@ class InstanceController extends Controller
 
     private function ensureOwner(Request $request, int $id): void
     {
-        $exists = DB::table('instances')
-            ->where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->exists();
-        abort_if(! $exists, 404);
+        $query = DB::table('instances')->where('id', $id);
+        if ($request->user()->role !== 'admin') {
+            $query->where('user_id', $request->user()->id);
+        }
+        abort_if(! $query->exists(), 404);
     }
 
     public function destroy(Request $request, int $id)
     {
-        $instance = DB::table('instances')
-            ->where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $query = DB::table('instances')->where('id', $id);
+        if ($request->user()->role !== 'admin') {
+            $query->where('user_id', $request->user()->id);
+        }
+        $instance = $query->first();
 
         abort_if(! $instance, 404);
 
         $this->worker->deleteInstance($id);
-
-        // Marque l'instance supprimée côté BDD (le worker a détruit les conteneurs).
         DB::table('instances')->where('id', $id)->update(['status' => 'deleted']);
 
-        $this->notifier->deleted($instance, $request->user());
+        // Notifie le propriétaire de l'instance (même quand un admin la supprime).
+        $owner = \App\Models\User::find($instance->user_id);
+        $this->notifier->deleted($instance, $owner);
 
         return response()->noContent();
     }
