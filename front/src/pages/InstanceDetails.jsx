@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Play,
   Square,
@@ -13,13 +13,13 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  ExternalLink,
 } from 'lucide-react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Server } from 'lucide-react';
 import { apiFetch } from '../api/client';
+import { useToast } from '../context/ToastContext';
 import DeleteInstanceModal from '../components/DeleteInstanceModal';
-
-const DEPLOY_DURATION_MS = 5000;
 
 const STATUS_META = {
   deploying:    { label: 'Déploiement', cls: 'bg-amber-500/10 text-amber-400', dot: 'bg-amber-400', spin: true },
@@ -47,7 +47,7 @@ const formatUptime = (createdAt) => {
 const InstanceDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { state: navState } = useLocation();
+  const toast = useToast();
 
   const [instance, setInstance] = useState(null);
   const [error, setError] = useState(null);
@@ -56,7 +56,6 @@ const InstanceDetails = () => {
   const [acting, setActing] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [forceDeploying, setForceDeploying] = useState(Boolean(navState?.justDeployed));
 
   // Métriques fake qui bougent légèrement pour faire vivre l'UI
   const [metrics, setMetrics] = useState({
@@ -106,8 +105,10 @@ const InstanceDetails = () => {
     try {
       await apiFetch(`/instances/${id}/${action}`, { method: 'POST' });
       await load();
+      const labels = { start: 'Instance démarrée.', stop: 'Instance arrêtée.' };
+      toast.success(labels[action] || 'Action effectuée.');
     } catch (e) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setActing(false);
     }
@@ -117,9 +118,10 @@ const InstanceDetails = () => {
     setDeleting(true);
     try {
       await apiFetch(`/instances/${id}`, { method: 'DELETE' });
+      toast.success('Instance supprimée.');
       navigate('/dashboard');
     } catch (e) {
-      alert(e.message);
+      toast.error(e.message);
       setDeleting(false);
     }
   };
@@ -142,19 +144,31 @@ const InstanceDetails = () => {
 
   if (!instance) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 text-zinc-500 text-xs font-bold uppercase tracking-widest">
-        Chargement…
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="h-4 w-32 bg-zinc-800 rounded animate-pulse mb-8" />
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 bg-zinc-800 rounded animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-7 w-56 bg-zinc-800 rounded animate-pulse" />
+            <div className="h-3 w-40 bg-zinc-800 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 bg-zinc-900 border border-zinc-800 rounded-sm animate-pulse" />
+          ))}
+        </div>
+        <div className="h-64 bg-zinc-900 border border-zinc-800 rounded-sm animate-pulse" />
       </div>
     );
   }
 
-  if (forceDeploying || instance.status === 'deploying' || instance.status === 'provisioning') {
-    return (
-      <DeployingView
-        instance={instance}
-        onDone={() => setForceDeploying(false)}
-      />
-    );
+  if (instance.status === 'deploying' || instance.status === 'provisioning') {
+    return <DeployingView instance={instance} onBack={() => navigate('/dashboard')} />;
+  }
+
+  if (instance.status === 'error') {
+    return <ErrorView instance={instance} onBack={() => navigate('/dashboard')} onDelete={confirmDelete} deleting={deleting} />;
   }
 
   if (instance.status === 'deleted') {
@@ -262,6 +276,16 @@ const InstanceDetails = () => {
         </div>
 
         <div className="flex gap-2 w-full lg:w-auto">
+          {instance.domain && instance.status === 'running' && instance.domain.startsWith('http') && (
+            <a
+              href={instance.domain}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Ouvrir
+            </a>
+          )}
           <button
             onClick={() => handleAction('start')}
             disabled={acting || instance.status === 'running' || instance.status === 'deploying' || instance.status === 'deleted'}
@@ -401,8 +425,8 @@ const InstanceDetails = () => {
                 <p className="font-mono text-white">{ipv6}</p>
               </div>
               <div>
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sous-domaine</p>
-                <p className="font-mono text-white">{instance.instance_name}.pt.filiere.info</p>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Adresse publique</p>
+                <p className="font-mono text-white break-all">{instance.domain || '— (en attente du worker)'}</p>
               </div>
             </div>
           )}
@@ -429,52 +453,66 @@ const InstanceDetails = () => {
   );
 };
 
-const DeployingView = ({ instance, onDone }) => {
-  const [progress, setProgress] = useState(0);
-  const onDoneRef = useRef(onDone);
-  useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
-
-  useEffect(() => {
-    const start = Date.now();
-    const tick = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const pct = Math.min(100, (elapsed / DEPLOY_DURATION_MS) * 100);
-      setProgress(pct);
-      if (elapsed >= DEPLOY_DURATION_MS) {
-        clearInterval(tick);
-        onDoneRef.current?.();
-      }
-    }, 60);
-    return () => clearInterval(tick);
-  }, []);
-
-  return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-xl text-center space-y-8">
-        <Server className="w-24 h-24 text-red-400 mx-auto animate-pulse" />
-        <div>
-          <h2 className="font-display text-4xl font-black uppercase tracking-tight text-white mb-2">
-            Déploiement en cours…
-          </h2>
-          <p className="text-zinc-400">
-            {instance.instance_name}
-            {instance.app_name && <> · <span className="text-red-400 font-bold">{instance.app_name}</span></>}
-          </p>
-        </div>
-
-        <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
-          <div
-            className="bg-red-500 h-full transition-[width] duration-100 ease-linear"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
-        <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500">
-          Allocation des ressources NVMe et configuration réseau · {Math.round(progress)}%
+// Déploiement réel : on ne connaît pas la durée → barre indéterminée.
+// Le composant parent re-rend automatiquement vers la vue normale quand le
+// polling détecte que le statut est passé à `running` (callback du worker).
+const DeployingView = ({ instance, onBack }) => (
+  <div className="min-h-[70vh] flex items-center justify-center px-4">
+    <div className="w-full max-w-xl text-center space-y-8">
+      <Server className="w-24 h-24 text-red-400 mx-auto animate-pulse" />
+      <div>
+        <h2 className="font-display text-4xl font-black uppercase tracking-tight text-white mb-2">
+          Déploiement en cours…
+        </h2>
+        <p className="text-zinc-400">
+          {instance.instance_name}
+          {instance.app_name && <> · <span className="text-red-400 font-bold">{instance.app_name}</span></>}
         </p>
       </div>
+
+      <div className="relative w-full bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
+        <div className="hb-indeterminate bg-red-500" />
+      </div>
+
+      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-zinc-500">
+        Provisionnement du conteneur et configuration réseau · peut prendre 1 à 2 min
+      </p>
+      <button onClick={onBack} className="text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">
+        ← Revenir au dashboard (le déploiement continue)
+      </button>
     </div>
-  );
-};
+  </div>
+);
+
+// Échec de déploiement (le worker a renvoyé status=error).
+const ErrorView = ({ instance, onBack, onDelete, deleting }) => (
+  <div className="min-h-[70vh] flex items-center justify-center px-4">
+    <div className="w-full max-w-xl text-center space-y-6">
+      <div className="w-20 h-20 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center mx-auto">
+        <AlertCircle className="w-10 h-10 text-red-500" />
+      </div>
+      <div>
+        <h2 className="font-display text-4xl font-black uppercase tracking-tight text-white mb-2">
+          Échec du déploiement
+        </h2>
+        <p className="text-zinc-400">
+          {instance.instance_name}
+          {instance.app_name && <> · <span className="text-red-400 font-bold">{instance.app_name}</span></>}
+        </p>
+        <p className="text-zinc-500 text-sm mt-3">
+          Le provisionnement a échoué côté infrastructure. Vous pouvez supprimer cette instance et réessayer.
+        </p>
+      </div>
+      <div className="flex gap-3 justify-center">
+        <button onClick={onBack} className="bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-2.5 rounded-sm text-xs font-black uppercase tracking-widest transition-colors">
+          Retour
+        </button>
+        <button onClick={onDelete} disabled={deleting} className="bg-red-600 hover:bg-red-500 text-white px-5 py-2.5 rounded-sm text-xs font-black uppercase tracking-widest transition-colors disabled:opacity-50">
+          {deleting ? 'Suppression…' : 'Supprimer'}
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export default InstanceDetails;

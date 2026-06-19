@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, ShieldCheck, Ban, Trash2, Loader2, Plus, Minus, Server, ShoppingCart, Wrench } from 'lucide-react';
+import { ArrowLeft, Coins, ShieldCheck, Ban, Trash2, Plus, Minus, Server, ShoppingCart, Wrench } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import Avatar from '../../components/Avatar';
 
 const AdminUserDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user: me } = useAuth();
+  const toast = useToast();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -27,12 +29,19 @@ const AdminUserDetail = () => {
 
   useEffect(() => { load(); }, [id]);
 
-  const action = async (fn) => {
+  const action = async (fn, successMsg) => {
     setBusy(true);
     setError('');
-    try { await fn(); load(); }
-    catch (e) { setError(e.message); }
-    finally { setBusy(false); }
+    try {
+      await fn();
+      load();
+      if (successMsg) toast.success(successMsg);
+    } catch (e) {
+      setError(e.message);
+      toast.error(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const adjustCredits = (sign) => action(async () => {
@@ -44,27 +53,47 @@ const AdminUserDetail = () => {
     });
     setAmount('');
     setReason('');
-  });
+  }, sign > 0 ? 'Crédits ajoutés.' : 'Crédits retirés.');
 
   const toggleRole = () => action(async () => {
     const next = data.user.role === 'admin' ? 'client' : 'admin';
     await apiFetch(`/admin/users/${id}`, { method: 'PATCH', body: { role: next } });
-  });
+  }, data.user.role === 'admin' ? 'Rétrogradé en client.' : 'Promu administrateur.');
 
   const toggleSuspend = () => action(async () => {
     const path = data.user.suspended_at ? 'unsuspend' : 'suspend';
     await apiFetch(`/admin/users/${id}/${path}`, { method: 'POST' });
-  });
+  }, data.user.suspended_at ? 'Compte réactivé.' : 'Compte suspendu.');
 
   const remove = () => {
     if (!confirm(`Supprimer définitivement ${data.user.email} ?`)) return;
     action(async () => {
       await apiFetch(`/admin/users/${id}`, { method: 'DELETE' });
+      toast.success('Utilisateur supprimé.');
       navigate('/admin/users');
     });
   };
 
-  if (loading) return <div className="max-w-5xl mx-auto px-4 py-20 text-center"><Loader2 className="w-6 h-6 animate-spin inline text-zinc-500" /></div>;
+  if (loading) return (
+    <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="flex items-center gap-5 mb-8">
+        <div className="w-24 h-24 bg-zinc-800 rounded-full animate-pulse shrink-0" />
+        <div className="space-y-2">
+          <div className="h-3 w-24 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-9 w-48 bg-zinc-800 rounded animate-pulse" />
+          <div className="h-3 w-40 bg-zinc-800 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="grid md:grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-zinc-900 border-2 border-zinc-800 rounded-sm p-5">
+            <div className="h-3 w-16 bg-zinc-800 rounded animate-pulse mb-3" />
+            <div className="h-9 w-20 bg-zinc-800 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (!data) return <div className="max-w-5xl mx-auto px-4 py-20 text-center text-red-400">{error || 'Introuvable'}</div>;
 
   const { user, credit_history = [], instances, total_spent } = data;
