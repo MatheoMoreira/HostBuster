@@ -25,11 +25,32 @@ const FAQ_GROUPS = [
             },
             {
                 q: 'Comment se passe le déploiement d\'une instance ?',
-                a: 'Vous choisissez une application, un plan, puis vous lancez le déploiement. L\'instance passe par les étapes provisioning → deploying → running, et devient accessible dès qu\'elle est en ligne.',
+                a: 'Vous choisissez une application, un plan, puis vous lancez le déploiement. L\'instance passe par les étapes provisioning → deploying → running, et devient accessible dès qu\'elle est en ligne. Vous recevez un email dès qu\'elle est prête.',
+            },
+        ],
+    },
+    {
+        category: 'Abonnement & renouvellement',
+        items: [
+            {
+                q: 'Comment fonctionne le renouvellement de mon instance ?',
+                a: 'Chaque instance fonctionne sur un abonnement mensuel. Le premier mois est payé à la création. Au bout de 30 jours, vous devez la renouveler depuis sa fiche en payant à nouveau le prix de votre offre, sinon l\'abonnement expire.',
             },
             {
-                q: 'Que se passe-t-il à la date de suppression programmée ?',
-                a: 'Chaque instance peut avoir une date de suppression programmée (champ scheduled_deletion_at). À l\'échéance, l\'instance est supprimée automatiquement et son statut passe à "deleted".',
+                q: 'Que se passe-t-il si je ne renouvelle pas à temps ?',
+                a: 'À l\'expiration, l\'instance est arrêtée (suspendue) et un email vous est envoyé. Vos données restent intactes pendant une période de grâce de 30 jours pour vous laisser le temps de renouveler.',
+            },
+            {
+                q: 'Quels rappels reçois-je avant la suppression définitive ?',
+                a: 'Vous recevez un email à l\'expiration (début de la période de grâce), un rappel 7 jours avant la suppression, un autre 1 jour avant, puis un email de confirmation au moment de la suppression effective.',
+            },
+            {
+                q: 'Comment renouveler une instance suspendue ?',
+                a: 'Ouvrez la fiche de votre instance et cliquez sur Renouveler. Le prix mensuel est débité, votre instance redémarre automatiquement, et la nouvelle échéance est repoussée de 30 jours.',
+            },
+            {
+                q: 'Que se passe-t-il au bout des 30 jours de grâce ?',
+                a: 'Sans renouvellement, l\'instance et toutes ses données sont définitivement supprimées. Cette opération est irréversible : pensez à exporter vos données importantes avant si vous ne souhaitez pas renouveler.',
             },
         ],
     },

@@ -31,6 +31,19 @@
   .hb-rise { animation: none; opacity: 1; }
 }
 
+/* Barre de progression indéterminée (déploiement en cours, durée inconnue) */
+@keyframes hb-indeterminate {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+.hb-indeterminate {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 40%;
+  animation: hb-indeterminate 1.3s ease-in-out infinite;
+}
+
 /* ---- Grain subtil (ambiance) ---- */
 .grain::after {
   content: "";

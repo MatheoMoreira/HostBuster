@@ -16,6 +16,7 @@ import Account from './pages/Account';
 import ResetPassword from './pages/ResetPassword';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
+import AdminInstances from './pages/admin/AdminInstances';
 import { useAuth } from './context/AuthContext';
 
 const App = () => {
@@ -110,6 +111,7 @@ const App = () => {
         <Route path="/instance/:id" element={<ProtectedRoute><InstanceDetails /></ProtectedRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
         <Route path="/admin/users/:id" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
+        <Route path="/admin/instances" element={<AdminRoute><AdminInstances /></AdminRoute>} />
       </Routes>
 
       {showLogin && (

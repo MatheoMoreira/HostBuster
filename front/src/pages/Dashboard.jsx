@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Server, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Server, Loader2, AlertCircle, Trash2, Eye, EyeOff } from 'lucide-react';
 import { apiFetch } from '../api/client';
 import DeleteInstanceModal from '../components/DeleteInstanceModal';
 
@@ -13,12 +13,26 @@ const STATUS_META = {
   deleted:      { label: 'Supprimée',   cls: 'bg-zinc-500/10 text-zinc-500',    icon: null },
 };
 
+const SHOW_DELETED_KEY = 'hb_dashboard_show_deleted';
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [instances, setInstances] = useState(null);
   const [error, setError] = useState(null);
   const [toDelete, setToDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(() => localStorage.getItem(SHOW_DELETED_KEY) === '1');
+
+  const toggleShowDeleted = () => {
+    setShowDeleted((v) => {
+      const next = !v;
+      localStorage.setItem(SHOW_DELETED_KEY, next ? '1' : '0');
+      return next;
+    });
+  };
+
+  const visibleInstances = instances?.filter((i) => showDeleted || i.status !== 'deleted') ?? null;
+  const deletedCount = instances?.filter((i) => i.status === 'deleted').length ?? 0;
 
   const load = useCallback(async () => {
     try {
@@ -66,12 +80,28 @@ const Dashboard = () => {
             Surveillance de votre infrastructure en temps réel.
           </p>
         </div>
-        <button
-          onClick={() => navigate('/setup')}
-          className="bg-red-500 hover:bg-red-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest transition-colors"
-        >
-          Ajouter un serveur
-        </button>
+        <div className="flex items-center gap-2">
+          {deletedCount > 0 && (
+            <button
+              onClick={toggleShowDeleted}
+              title={showDeleted ? 'Masquer les instances supprimées' : 'Afficher les instances supprimées'}
+              className={`flex items-center gap-2 px-3 py-2 rounded-sm text-[10px] font-black uppercase tracking-widest border transition-colors ${
+                showDeleted
+                  ? 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:border-red-400'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
+              }`}
+            >
+              {showDeleted ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              Supprimées ({deletedCount})
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/setup')}
+            className="bg-red-500 hover:bg-red-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest transition-colors"
+          >
+            Ajouter un serveur
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -81,26 +111,42 @@ const Dashboard = () => {
       )}
 
       {instances === null && !error && (
-        <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest">Chargement…</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-zinc-900 border border-zinc-800 p-6 rounded-sm">
+              <div className="flex justify-between items-start mb-6">
+                <div className="w-6 h-6 bg-zinc-800 rounded animate-pulse" />
+                <div className="w-20 h-5 bg-zinc-800 rounded animate-pulse" />
+              </div>
+              <div className="h-4 w-2/3 bg-zinc-800 rounded animate-pulse mb-2" />
+              <div className="h-3 w-1/3 bg-zinc-800 rounded animate-pulse mb-6" />
+              <div className="h-3 w-3/4 bg-zinc-800 rounded animate-pulse mb-6" />
+              <div className="pt-4 border-t border-zinc-800 flex justify-between">
+                <div className="h-3 w-10 bg-zinc-800 rounded animate-pulse" />
+                <div className="h-4 w-4 bg-zinc-800 rounded animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
-      {instances && instances.length === 0 && (
+      {visibleInstances && visibleInstances.length === 0 && (
         <div className="bg-zinc-900 border border-zinc-800 p-12 rounded-sm text-center">
           <Server className="text-zinc-700 w-10 h-10 mx-auto mb-4" />
           <p className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">
-            Aucune instance déployée
+            {instances.length === 0 ? 'Aucune instance déployée' : 'Aucune instance active'}
           </p>
           <button
             onClick={() => navigate('/setup')}
             className="bg-red-500 hover:bg-red-400 text-zinc-950 px-4 py-2 rounded-sm text-xs font-black uppercase tracking-widest"
           >
-            Déployer ma première instance
+            {instances.length === 0 ? 'Déployer ma première instance' : 'Déployer une nouvelle instance'}
           </button>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {(instances || []).map((inst) => {
+        {(visibleInstances || []).map((inst) => {
           const meta = STATUS_META[inst.status] || STATUS_META.error;
           const Icon = meta.icon;
           const kpisInactive = ['stopped', 'deploying', 'provisioning'].includes(inst.status);

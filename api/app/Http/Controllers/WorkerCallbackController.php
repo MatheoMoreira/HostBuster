@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Services\InstanceNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WorkerCallbackController extends Controller
 {
+    public function __construct(private readonly InstanceNotifier $notifier) {}
+
     public function __invoke(Request $request)
     {
         $expected = (string) config('worker.callback_token');
@@ -29,17 +33,23 @@ class WorkerCallbackController extends Controller
         if (! empty($data['ipv6'])) {
             $updates['ipv6_address'] = $data['ipv6'];
         }
+        if (! empty($data['url'])) {
+            $updates['domain'] = $data['url'];
+        }
 
         DB::table('instances')->where('id', $data['instance_id'])->update($updates);
 
-        $userId = DB::table('instances')->where('id', $data['instance_id'])->value('user_id');
-        if ($userId) {
-            DB::table('notifications')->insert([
-                'user_id' => $userId,
-                'type' => $data['status'] === 'error' ? 'error' : 'info',
-                'message' => $this->message($data),
-                'sent_at' => now(),
-            ]);
+        $instance = DB::table('instances')->find($data['instance_id']);
+        $user = $instance ? User::find($instance->user_id) : null;
+
+        if ($instance && $user) {
+            // Notifications email + in-app selon le statut renvoyé par le worker.
+            match ($data['status']) {
+                'running' => $this->notifier->running($instance, $user, $data['url'] ?? null),
+                'error' => $this->notifier->failed($instance, $user, $data['error'] ?? null),
+                'deleted' => $this->notifier->deleted($instance, $user),
+                default => null, // provisioning/stopped : pas d'email
+            };
         }
 
         return response()->noContent();
@@ -53,16 +63,6 @@ class WorkerCallbackController extends Controller
             'stopped' => 'stopped',
             'error' => 'error',
             'deleted' => 'deleted',
-        };
-    }
-
-    private function message(array $data): string
-    {
-        return match ($data['status']) {
-            'running' => sprintf('Instance #%d en ligne%s', $data['instance_id'], $data['url'] ? " : {$data['url']}" : ''),
-            'error' => sprintf('Échec instance #%d%s', $data['instance_id'], $data['error'] ? " : {$data['error']}" : ''),
-            'deleted' => sprintf('Instance #%d supprimée', $data['instance_id']),
-            default => sprintf('Instance #%d : %s', $data['instance_id'], $data['status']),
         };
     }
 }

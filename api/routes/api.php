@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AdminInstanceController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuthController;
@@ -38,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/instances/{id}', [InstanceController::class, 'update']);
     Route::post('/instances/{id}/start', [InstanceController::class, 'start']);
     Route::post('/instances/{id}/stop', [InstanceController::class, 'stop']);
+    Route::post('/instances/{id}/renew', [InstanceController::class, 'renew']);
     Route::delete('/instances/{id}', [InstanceController::class, 'destroy']);
 
     Route::post('/credits/recharge', [CreditController::class, 'recharge']);
@@ -51,5 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/users/{id}/suspend', [AdminUserController::class, 'suspend']);
         Route::post('/users/{id}/unsuspend', [AdminUserController::class, 'unsuspend']);
         Route::delete('/users/{id}', [AdminUserController::class, 'destroy']);
+
+        Route::get('/instances', [AdminInstanceController::class, 'index']);
     });
 });
