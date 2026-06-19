@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShieldCheck, User, Ban, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, ShieldCheck, User, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiFetch } from '../../api/client';
 import Avatar from '../../components/Avatar';
+import AdminTabs from '../../components/AdminTabs';
 
 const RoleBadge = ({ role }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.15em] border ${
@@ -45,6 +46,8 @@ const AdminUsers = () => {
         </h1>
       </div>
 
+      <AdminTabs />
+
       <div className="hb-rise flex flex-wrap gap-3 mb-6" style={{ animationDelay: '80ms' }}>
         <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -81,11 +84,30 @@ const AdminUsers = () => {
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr><td colSpan={7} className="py-12 text-center text-zinc-500"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
-            )}
+            {loading && Array.from({ length: 6 }).map((_, i) => (
+              <tr key={`sk-${i}`} className="border-b border-zinc-800/60">
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-zinc-800 rounded-full animate-pulse shrink-0" />
+                    <div className="space-y-1.5">
+                      <div className="h-3.5 w-24 bg-zinc-800 rounded animate-pulse" />
+                      <div className="h-2.5 w-16 bg-zinc-800 rounded animate-pulse" />
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3 px-4"><div className="h-3 w-32 bg-zinc-800 rounded animate-pulse" /></td>
+                <td className="py-3 px-4"><div className="h-5 w-16 bg-zinc-800 rounded animate-pulse" /></td>
+                <td className="py-3 px-4"><div className="h-3 w-10 bg-zinc-800 rounded animate-pulse ml-auto" /></td>
+                <td className="py-3 px-4"><div className="h-3 w-12 bg-zinc-800 rounded animate-pulse" /></td>
+                <td className="py-3 px-4"><div className="h-3 w-16 bg-zinc-800 rounded animate-pulse" /></td>
+                <td className="py-3 px-4"></td>
+              </tr>
+            ))}
             {!loading && data?.data?.length === 0 && (
-              <tr><td colSpan={7} className="py-12 text-center text-zinc-500 text-sm font-bold">Aucun utilisateur.</td></tr>
+              <tr><td colSpan={7} className="py-16 text-center">
+                <User className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+                <p className="text-zinc-500 text-sm font-bold">Aucun utilisateur ne correspond.</p>
+              </td></tr>
             )}
             {!loading && data?.data?.map((u) => (
               <tr key={u.id} className="border-b border-zinc-800/60 hover:bg-red-500/5 transition-colors">
