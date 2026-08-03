@@ -66,7 +66,11 @@ class ProcessInstanceLifecycle extends Command
             } catch (\Throwable $e) {
                 $this->warn("delete {$inst->id}: {$e->getMessage()}");
             }
-            DB::table('instances')->where('id', $inst->id)->update(['status' => 'deleted']);
+            DB::table('instances')->where('id', $inst->id)->update([
+                'status' => 'deleted',
+                'deleted_at' => $now,
+                'deleted_by' => null, // suppression automatique par le système
+            ]);
             if ($user = User::find($inst->user_id)) {
                 $notifier->autoDeleted($inst, $user);
             }

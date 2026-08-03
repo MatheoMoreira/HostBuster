@@ -116,8 +116,13 @@ class InstanceController extends Controller
     {
         $query = DB::table('instances')
             ->leftJoin('applications', 'applications.id', '=', 'instances.app_id')
+            ->leftJoin('users as deleter', 'deleter.id', '=', 'instances.deleted_by')
             ->where('instances.id', $id)
-            ->select('instances.*', 'applications.name as app_name');
+            ->select(
+                'instances.*',
+                'applications.name as app_name',
+                DB::raw("TRIM(CONCAT(COALESCE(deleter.first_name,''),' ',COALESCE(deleter.last_name,''))) as deleted_by_name")
+            );
 
         if ($request->user()->role !== 'admin') {
             $query->where('instances.user_id', $request->user()->id);
@@ -125,6 +130,8 @@ class InstanceController extends Controller
 
         $instance = $query->first();
         abort_if(! $instance, 404);
+
+        $this->annotateDeletion($instance);
 
         return response()->json($instance);
     }
@@ -310,6 +317,26 @@ class InstanceController extends Controller
         ]);
     }
 
+    /**
+     * Renseigne le rôle de l'auteur de la suppression (propriétaire / admin /
+     * système) et nettoie le nom quand la suppression est automatique.
+     */
+    private function annotateDeletion(object $instance): void
+    {
+        if (($instance->status ?? null) !== 'deleted') {
+            return;
+        }
+
+        if ($instance->deleted_by === null) {
+            $instance->deleted_by_role = 'système';
+            $instance->deleted_by_name = null;
+        } elseif ((int) $instance->deleted_by === (int) $instance->user_id) {
+            $instance->deleted_by_role = 'propriétaire';
+        } else {
+            $instance->deleted_by_role = 'admin';
+        }
+    }
+
     private function ensureOwner(Request $request, int $id): void
     {
         $query = DB::table('instances')->where('id', $id);
@@ -330,7 +357,11 @@ class InstanceController extends Controller
         abort_if(! $instance, 404);
 
         $this->worker->deleteInstance($id);
-        DB::table('instances')->where('id', $id)->update(['status' => 'deleted']);
+        DB::table('instances')->where('id', $id)->update([
+            'status' => 'deleted',
+            'deleted_at' => now(),
+            'deleted_by' => $request->user()->id,
+        ]);
 
         // Notifie le propriétaire de l'instance (même quand un admin la supprime).
         $owner = \App\Models\User::find($instance->user_id);

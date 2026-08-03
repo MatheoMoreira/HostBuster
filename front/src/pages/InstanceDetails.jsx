@@ -280,9 +280,25 @@ const InstanceDetails = () => {
                   {instance.cpu_allocated} vCPU · {instance.ram_allocated} Mo · {instance.storage_allocated} Go
                 </p>
               </div>
-              <div className="bg-zinc-950 border border-zinc-800 rounded-sm p-4 col-span-2">
+              <div className="bg-zinc-950 border border-zinc-800 rounded-sm p-4">
                 <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 mb-1">Créée le</p>
                 <p className="text-sm font-bold text-zinc-300">{instance.created_at || '—'}</p>
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-sm p-4">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 mb-1">Supprimée le</p>
+                <p className="text-sm font-bold text-zinc-300">
+                  {instance.deleted_at ? new Date(instance.deleted_at).toLocaleString('fr-FR') : '—'}
+                </p>
+              </div>
+              <div className="bg-zinc-950 border border-zinc-800 rounded-sm p-4 col-span-2">
+                <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-600 mb-1">Supprimée par</p>
+                <p className="text-sm font-bold text-zinc-300">
+                  {instance.deleted_by_role === 'système'
+                    ? 'Automatiquement (expiration d’abonnement)'
+                    : instance.deleted_by_name
+                      ? `${instance.deleted_by_name} · ${instance.deleted_by_role}`
+                      : (instance.deleted_by_role || '—')}
+                </p>
               </div>
             </div>
 
