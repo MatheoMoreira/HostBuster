@@ -54,6 +54,27 @@ const FAQ_GROUPS = [
             },
         ],
     },
+    {
+        category: 'Données & confidentialité',
+        items: [
+            {
+                q: 'Combien de temps mes données sont-elles conservées ?',
+                a: 'Une instance active est conservée tant que son abonnement est à jour. À l\'expiration, vos données sont gardées 30 jours (période de grâce) puis définitivement supprimées si vous ne renouvelez pas. La suppression efface l\'instance et l\'ensemble de ses sauvegardes.',
+            },
+            {
+                q: 'Pendant combien de temps gardez-vous mes sauvegardes ?',
+                a: 'Les sauvegardes suivent une politique de rétention : nous conservons au plus les 7 dernières, et aucune de plus de 30 jours. Les plus anciennes sont automatiquement purgées. Lorsqu\'une instance est supprimée, toutes ses sauvegardes le sont avec elle.',
+            },
+            {
+                q: 'Où sont hébergées mes données ?',
+                a: 'Vos données sont hébergées sur nos serveurs situés dans l\'Union européenne, conformément au RGPD. Chaque instance est isolée dans son propre conteneur.',
+            },
+            {
+                q: 'Puis-je demander la suppression de mes données ?',
+                a: 'Oui. Vous pouvez supprimer une instance et ses sauvegardes à tout moment depuis sa fiche. La suppression est immédiate et irréversible côté serveur (instance, volumes et sauvegardes).',
+            },
+        ],
+    },
 ];
 
 const Faq = () => {
