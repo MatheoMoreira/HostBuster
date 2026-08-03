@@ -8,10 +8,10 @@ import {
 import { appTypes, getPlansByApp, getAppByKey } from '../data/Constants';
 
 const STATS = [
-    { value: '~60s', label: 'Déploiement moyen', icon: Rocket },
     { value: '4', label: 'Applications prêtes à l\'emploi', icon: Server },
-    { value: '99.9%', label: 'SLA disponibilité', icon: ShieldCheck },
-    { value: '24/7', label: 'Supervision active', icon: Clock },
+    { value: '~40s', label: 'Du clic à la mise en ligne', icon: Rocket },
+    { value: 'Temps réel', label: 'Monitoring CPU · RAM · uptime', icon: Cpu },
+    { value: '1-clic', label: 'Sauvegarde & restauration', icon: Database },
 ];
 
 const STEPS = [
@@ -44,46 +44,7 @@ const Home = ({ handleOrder }) => {
                 </p>
             </header>
 
-            {/* === STATS BAR === */}
-            <section className="max-w-7xl mx-auto px-4 mb-24">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800 border border-zinc-800 rounded-sm overflow-hidden">
-                    {STATS.map(({ value, label, icon: Icon }, i) => (
-                        <div key={i} className="bg-zinc-950 px-6 py-8 text-center">
-                            <Icon className="w-5 h-5 text-red-400 mx-auto mb-3" />
-                            <p className="font-display text-3xl md:text-4xl font-black text-white mb-1">{value}</p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* === COMMENT ÇA MARCHE === */}
-            <section className="max-w-7xl mx-auto px-4 mb-24">
-                <div className="text-center mb-16">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Process</p>
-                    <h2 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
-                        De l'idée à la prod, <br className="hidden md:block" />
-                        <span className="text-red-400">en trois clics.</span>
-                    </h2>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
-                    {STEPS.map(({ n, title, desc, icon: Icon }, i) => (
-                        <div key={i} className="hb-rise relative bg-zinc-900 border-2 border-zinc-800 rounded-sm p-8 group hover:border-red-500/40 transition-colors" style={{ animationDelay: `${i * 100}ms` }}>
-                            <div className="flex items-start justify-between mb-6">
-                                <span className="font-display font-black text-5xl text-zinc-800 group-hover:text-red-500/30 transition-colors">{n}</span>
-                                <Icon className="w-7 h-7 text-red-400" />
-                            </div>
-                            <h3 className="font-display text-xl font-black uppercase tracking-tight text-white mb-3">{title}</h3>
-                            <p className="text-sm text-zinc-400 leading-relaxed">{desc}</p>
-                            {i < STEPS.length - 1 && (
-                                <ArrowRight className="hidden md:block absolute -right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-700 z-10" />
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* === PRICING === */}
+            {/* === PRICING (choix de l'app — placé en premier) === */}
             <section className="max-w-7xl mx-auto px-4 mb-24">
                 <div className="text-center mb-12">
                     <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Pricing</p>
@@ -91,12 +52,12 @@ const Home = ({ handleOrder }) => {
                     <p className="text-zinc-500 text-sm">Crédits flexibles · ajustables à tout moment · pas d'engagement</p>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-3 mb-12">
+                <div className="flex flex-wrap justify-center gap-4 mb-12">
                     {appTypes.map((app) => (
                         <button
                             key={app.id}
                             onClick={() => setActiveTab(app.id)}
-                            className={`flex items-center gap-3 px-6 py-3.5 rounded-sm font-black transition-all border-2 uppercase text-xs tracking-tighter ${activeTab === app.id
+                            className={`flex items-center gap-3 px-8 py-4 rounded-sm font-black transition-all border-2 uppercase text-base tracking-tighter [&_svg]:w-6 [&_svg]:h-6 ${activeTab === app.id
                                 ? 'border-red-500 bg-red-500/10 text-red-400'
                                 : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
                                 }`}
@@ -155,6 +116,45 @@ const Home = ({ handleOrder }) => {
                 </div>
             </section>
 
+            {/* === STATS BAR === */}
+            <section className="max-w-7xl mx-auto px-4 mb-24">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800 border border-zinc-800 rounded-sm overflow-hidden">
+                    {STATS.map(({ value, label, icon: Icon }, i) => (
+                        <div key={i} className="bg-zinc-950 px-6 py-8 text-center">
+                            <Icon className="w-5 h-5 text-red-400 mx-auto mb-3" />
+                            <p className="font-display text-3xl md:text-4xl font-black text-white mb-1">{value}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{label}</p>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* === COMMENT ÇA MARCHE === */}
+            <section className="max-w-7xl mx-auto px-4 mb-24">
+                <div className="text-center mb-16">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Process</p>
+                    <h2 className="font-display text-4xl md:text-5xl font-black uppercase tracking-tighter text-white">
+                        De l'idée à la prod, <br className="hidden md:block" />
+                        <span className="text-red-400">en trois clics.</span>
+                    </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                    {STEPS.map(({ n, title, desc, icon: Icon }, i) => (
+                        <div key={i} className="hb-rise relative bg-zinc-900 border-2 border-zinc-800 rounded-sm p-8 group hover:border-red-500/40 transition-colors" style={{ animationDelay: `${i * 100}ms` }}>
+                            <div className="flex items-start justify-between mb-6">
+                                <span className="font-display font-black text-5xl text-zinc-800 group-hover:text-red-500/30 transition-colors">{n}</span>
+                                <Icon className="w-7 h-7 text-red-400" />
+                            </div>
+                            <h3 className="font-display text-xl font-black uppercase tracking-tight text-white mb-3">{title}</h3>
+                            <p className="text-sm text-zinc-400 leading-relaxed">{desc}</p>
+                            {i < STEPS.length - 1 && (
+                                <ArrowRight className="hidden md:block absolute -right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-700 z-10" />
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </section>
+
             {/* === SÉCURITÉ === */}
             <section className="max-w-5xl mx-auto px-4 mb-24">
                 <div className="bg-zinc-900 border border-zinc-800 rounded-sm p-12">
@@ -166,45 +166,45 @@ const Home = ({ handleOrder }) => {
                                 <div className="flex gap-5">
                                     <ShieldCheck className="w-6 h-6 text-red-400 shrink-0" />
                                     <div>
-                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Isolation réseau</h4>
-                                        <p className="text-zinc-500 text-sm">Chaque instance bénéficie d'une segmentation complète au niveau du kernel.</p>
+                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Isolation par conteneur</h4>
+                                        <p className="text-zinc-500 text-sm">Chaque instance tourne dans son propre conteneur Docker, isolé des autres.</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-5">
                                     <Globe className="w-6 h-6 text-red-400 shrink-0" />
                                     <div>
-                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Datacenters Tier III · UE</h4>
-                                        <p className="text-zinc-500 text-sm">Serveurs localisés en France et en Allemagne. Conformité RGPD garantie.</p>
+                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Hébergement en UE</h4>
+                                        <p className="text-zinc-500 text-sm">Serveurs situés dans l'Union européenne. Certificat HTTPS fourni automatiquement.</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-5">
                                     <Database className="w-6 h-6 text-red-400 shrink-0" />
                                     <div>
-                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Sauvegardes auto</h4>
-                                        <p className="text-zinc-500 text-sm">Backups quotidiens chiffrés, restauration en 1-clic depuis le dashboard.</p>
+                                        <h4 className="font-black mb-1 uppercase text-sm text-white">Sauvegardes à la demande</h4>
+                                        <p className="text-zinc-500 text-sm">Snapshot des volumes de données, restauration en 1 clic depuis le dashboard.</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="bg-zinc-950 border border-zinc-800 p-10 rounded-sm text-center">
-                            <h3 className="font-display text-7xl font-black mb-2 text-red-400">99.9%</h3>
-                            <p className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-8">Disponibilité garantie (SLA)</p>
+                            <h3 className="font-display text-7xl font-black mb-2 text-red-400">~40s</h3>
+                            <p className="font-black uppercase tracking-widest text-[10px] text-zinc-500 mb-8">Du clic à la mise en ligne</p>
                             <div className="grid grid-cols-2 gap-3 text-left">
                                 <div className="border border-zinc-800 px-3 py-2 rounded-sm">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Conformité</p>
-                                    <p className="text-xs font-black text-white">RGPD</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Hébergement</p>
+                                    <p className="text-xs font-black text-white">UE</p>
                                 </div>
                                 <div className="border border-zinc-800 px-3 py-2 rounded-sm">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Datacenter</p>
-                                    <p className="text-xs font-black text-white">Tier III</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Accès</p>
+                                    <p className="text-xs font-black text-white">HTTPS auto</p>
                                 </div>
                                 <div className="border border-zinc-800 px-3 py-2 rounded-sm">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Chiffrement</p>
-                                    <p className="text-xs font-black text-white">AES-256</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Isolation</p>
+                                    <p className="text-xs font-black text-white">Docker</p>
                                 </div>
                                 <div className="border border-zinc-800 px-3 py-2 rounded-sm">
-                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Support</p>
-                                    <p className="text-xs font-black text-white">24/7</p>
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Sauvegardes</p>
+                                    <p className="text-xs font-black text-white">1-clic</p>
                                 </div>
                             </div>
                         </div>

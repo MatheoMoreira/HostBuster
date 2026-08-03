@@ -131,6 +131,15 @@ const AdminInstances = () => {
                     <span className={`inline-flex items-center px-2 py-1 rounded-sm text-[10px] font-mono font-bold uppercase tracking-[0.15em] border ${meta.cls}`}>
                       {meta.label}
                     </span>
+                    {inst.status === 'deleted' && inst.deleted_at && (
+                      <p className="mt-1.5 text-[10px] font-mono text-zinc-600 leading-tight">
+                        {new Date(inst.deleted_at).toLocaleString('fr-FR')}
+                        <br />
+                        {inst.deleted_by_role === 'système'
+                          ? 'par le système'
+                          : `par ${inst.deleted_by_name || '?'} · ${inst.deleted_by_role}`}
+                      </p>
+                    )}
                   </td>
                   <td className="py-3 px-4 text-right text-[11px] font-mono text-zinc-400 whitespace-nowrap">
                     {inst.cpu_allocated} vCPU · {Math.round(inst.ram_allocated / 1024)} Go · {inst.storage_allocated} Go
