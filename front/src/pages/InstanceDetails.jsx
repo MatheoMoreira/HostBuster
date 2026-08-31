@@ -51,7 +51,7 @@ const InstanceDetails = () => {
 
   const [instance, setInstance] = useState(null);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('network');
+  const [activeTab, setActiveTab] = useState('backups');
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'start' | 'stop'
@@ -510,8 +510,8 @@ const InstanceDetails = () => {
       <div className="bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden">
         <div className="flex border-b border-zinc-800">
           {[
-            { id: 'network', label: 'Réseau', icon: Globe },
             { id: 'backups', label: 'Sauvegardes', icon: Database },
+            { id: 'network', label: 'Réseau', icon: Globe },
           ].map((tab) => (
             <button
               key={tab.id}
