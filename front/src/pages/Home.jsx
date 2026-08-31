@@ -264,7 +264,7 @@ const Home = ({ handleOrder }) => {
                                 <span className="font-display font-black text-xl uppercase tracking-tighter text-white">HostBuster</span>
                             </div>
                             <p className="text-xs text-zinc-500 leading-relaxed">
-                                PaaS clé-en-main pour PME, indépendants et particuliers. Déployez vos apps en un clic.
+                                Déployez vos apps en un clic.
                             </p>
                         </div>
                         <div>
