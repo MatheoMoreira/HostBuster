@@ -3,11 +3,8 @@ import {
   Play,
   Square,
   Trash2,
-  Terminal,
   Globe,
-  Shield,
   Database,
-  Settings,
   ArrowLeft,
   Copy,
   Check,
@@ -54,7 +51,7 @@ const InstanceDetails = () => {
 
   const [instance, setInstance] = useState(null);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('console');
+  const [activeTab, setActiveTab] = useState('network');
   const [copied, setCopied] = useState(false);
   const [acting, setActing] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'start' | 'stop'
@@ -513,11 +510,8 @@ const InstanceDetails = () => {
       <div className="bg-zinc-900 border border-zinc-800 rounded-sm overflow-hidden">
         <div className="flex border-b border-zinc-800">
           {[
-            { id: 'console', label: 'Console', icon: Terminal },
             { id: 'network', label: 'Réseau', icon: Globe },
             { id: 'backups', label: 'Sauvegardes', icon: Database },
-            { id: 'security', label: 'Sécurité', icon: Shield },
-            { id: 'settings', label: 'Paramètres', icon: Settings },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -533,17 +527,6 @@ const InstanceDetails = () => {
         </div>
 
         <div className="p-0">
-          {activeTab === 'console' && (
-            <div className="bg-zinc-950 p-6 font-mono text-sm min-h-[400px]">
-              <div className="text-zinc-500 mb-1">[SYSTEM] Connexion établie au socket v4.2.1...</div>
-              <div className="text-zinc-500 mb-4">[SYSTEM] Authentification via clé SSH réussie.</div>
-              <div className="text-white flex gap-2">
-                <span className="text-red-400 font-bold">root@{instance.instance_name}:~$</span>
-                <span className="animate-pulse">_</span>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'network' && (
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -559,14 +542,6 @@ const InstanceDetails = () => {
 
           {activeTab === 'backups' && (
             <BackupsTab instanceId={id} canManage={instance.status !== 'deleted'} />
-          )}
-
-          {activeTab !== 'console' && activeTab !== 'network' && activeTab !== 'backups' && (
-            <div className="p-12 text-center">
-              <p className="text-zinc-500 font-bold text-xs uppercase tracking-[0.2em]">
-                Configuration {activeTab} en cours de chargement...
-              </p>
-            </div>
           )}
         </div>
       </div>
