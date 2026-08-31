@@ -140,7 +140,7 @@ const Faq = () => {
                 </h3>
                 <p className="text-zinc-400 mb-6">Notre équipe support répond en moins de 24h ouvrées.</p>
                 <a
-                    href="mailto:support@hostbuster.fr"
+                    href="mailto:C.pess42@gmail.com"
                     className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-400 text-black px-6 py-3 rounded-sm font-black uppercase text-xs tracking-widest transition-colors"
                 >
                     Contacter le support <ArrowRight className="w-4 h-4" />

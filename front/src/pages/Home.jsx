@@ -278,7 +278,7 @@ const Home = ({ handleOrder }) => {
                         <div>
                             <h4 className="font-black text-xs uppercase tracking-widest text-white mb-4">Contact</h4>
                             <ul className="space-y-2 text-xs text-zinc-500">
-                                <li><a href="mailto:support@hostbuster.fr" className="hover:text-red-400 transition-colors">support@hostbuster.fr</a></li>
+                                <li><a href="mailto:C.pess42@gmail.com" className="hover:text-red-400 transition-colors">C.pess42@gmail.com</a></li>
                             </ul>
                         </div>
                     </div>
