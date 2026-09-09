@@ -1,0 +1,18 @@
+[Unit]
+Description=HostBuster Worker (agent de déploiement d'instances)
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=/root/hostbuster-worker
+EnvironmentFile=/root/hostbuster-worker/.env
+# WORKER_BIND = adresse d'écoute (127.0.0.1 par défaut ; mets l'IP privée/IPv6
+# joignable par Abeille, ou 0.0.0.0 si le port est filtré par firewall).
+ExecStart=/bin/sh -c '/root/hostbuster-worker/venv/bin/uvicorn app:app --host $${WORKER_BIND:-127.0.0.1} --port 8088'
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target

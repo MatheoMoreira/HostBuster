@@ -1,1 +1,10 @@
 start.command
+
+# Environnements et secrets
+.env
+.env.local
+
+# Python (agent worker)
+__pycache__/
+*.py[cod]
+venv/
